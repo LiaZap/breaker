@@ -42,7 +42,8 @@ const distPath = path.join(__dirname, '../../dist');
 app.use(express.static(distPath));
 
 // Handle React Routing (SPA)
-app.get('*', (req, res) => {
+// Express 5 requires a parametrisable syntax for wildcard or regex
+app.get('/*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
