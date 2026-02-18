@@ -1,0 +1,16 @@
+Nome,Categoria,Vendas,Preco,Custo
+Hamburguer Artesanal,Prato Principal,250,35.00,12.50
+Refrigerante Lata,Bebida,500,6.00,2.00
+Batata Frita,Acompanhamento,180,18.00,5.00
+Suco Natural,Bebida,150,12.00,3.50
+Filet Mignon,Prato Principal,120,65.00,28.00
+Salmão Grelhado,Prato Principal,95,58.00,25.00
+Lagosta Thermidor,Prato Principal,15,120.00,55.00
+Vinho Especial,Bebida,8,150.00,60.00
+Salada Simples,Entrada,20,22.00,4.00
+Sopa de Ervilha,Entrada,10,18.00,3.50
+Pudim,Sobremesa,80,15.00,3.00
+Bolo de Chocolate,Sobremesa,60,18.00,4.50
+Cerveja Artesanal,Bebida,110,25.00,8.00
+Risoto de Camarão,Prato Principal,70,55.00,20.00
+Água Mineral,Bebida,300,5.00,1.00

@@ -49,7 +49,7 @@ const parseMenuExcel = (buffer) => {
         name: findVal(['Nome', 'Prato', 'Item', 'Name']) || 'Sem Nome',
         category: findVal(['Categoria', 'Grupo', 'Category']) || 'Geral',
         sales: parseNumber(findVal(['Vendas', 'Volume', 'Qtd', 'Quantidade', 'Sales'])),
-        price: parseNumber(findVal(['Preço', 'Venda', 'R$', 'Price', 'Valor'])),
+        price: parseNumber(findVal(['Preço', 'Preco', 'Venda', 'Valor de Venda', 'R$', 'Price', 'Valor'])),
         cost: parseNumber(findVal(['Custo', 'CMV', 'Cost']))
     };
   });
