@@ -285,6 +285,9 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
   const { dashboardData } = useDashboard();
   const fichaCategoryOptions = dashboardData.operational?.categories?.fichas || ['Prato Principal', 'Entrada', 'Sobremesa', 'Bebida', 'Acompanhamento', 'Insumo Preparado'];
   const insumoCategoryOptions = dashboardData.operational?.categories?.insumos || ['Proteínas', 'Grãos', 'Vinhos', 'Molhos', 'Legumes', 'Temperos', 'Óleos', 'Laticínios', 'Outros'];
+  
+  // Use real insumos from Context
+  const availableInsumos = dashboardData.operational?.insumos || [];
 
   const [categoria, setCategoria] = useState(editingFicha ? editingFicha.type : fichaCategoryOptions[0]);
   const [rendimento, setRendimento] = useState(editingFicha ? editingFicha.rendimento.replace(/[^0-9]/g, '') : '200');
@@ -292,7 +295,11 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
   const [searchInsumo, setSearchInsumo] = useState('');
   const [addedInsumos, setAddedInsumos] = useState(() => {
     if (editingFicha && editingFicha.insumos > 0) {
-      return availableInsumosPool.slice(0, editingFicha.insumos).map(i => ({ ...i, qty: i.defaultQty }));
+      // Logic to restore added insumos would need storing them in Ficha object detailedly.
+      // For now, if we don't store the detailed list in Ficha, we can't fully restore it.
+      // Assuming Ficha object structure might need update, but for now let's fix the SEARCH.
+      // If editingFicha has a list of 'ingredients' (not just count), we use it.
+      return editingFicha.ingredients || [];
     }
     return [];
   });
@@ -302,7 +309,7 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
   const handleSave = () => {
     if (!nome.trim()) return;
     const custoTotalInsumos = addedInsumos.reduce((sum, i) => {
-      const price = parseFloat(i.price.replace(',', '.')) || 0;
+      const price = parseFloat(String(i.price).replace('R$','').replace(',', '.')) || 0;
       return sum + price;
     }, 0);
     const custoEmb = parseFloat(custoEmbalagem.replace(',', '.')) || 0;
@@ -313,6 +320,7 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
       type: categoria,
       progress: editingFicha ? editingFicha.progress : 0, // Default progress
       insumos: addedInsumos.length,
+      ingredients: addedInsumos, // Store detailed ingredients
       custoInsumos: `R$${custoTotalInsumos.toFixed(2).replace('.', ',')}`,
       custoEmbalagem: `R$${custoEmb.toFixed(2).replace('.', ',')}`,
       rendimento: `${rendimento}gr`, // Assuming grams for now
@@ -324,7 +332,7 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
 
   // Filter available insumos based on search and exclude already added
   const addedIds = new Set(addedInsumos.map(i => i.id));
-  const filteredInsumos = availableInsumosPool.filter(i =>
+  const filteredInsumos = availableInsumos.filter(i =>
     !addedIds.has(i.id) &&
     (searchInsumo === '' || i.name.toLowerCase().includes(searchInsumo.toLowerCase()) || i.category.toLowerCase().includes(searchInsumo.toLowerCase()))
   );
