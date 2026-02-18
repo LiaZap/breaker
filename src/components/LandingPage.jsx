@@ -1,0 +1,258 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import boltIcon from '../assets/bolt.svg';
+import lockIcon from '../assets/lock.svg';
+import OnboardingForm from './OnboardingForm';
+import { onboardingQuestions } from '../data/onboardingQuestions';
+
+import { useDashboard } from '../context/DashboardContext';
+
+const LandingPage = ({ onComplete }) => {
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const { dashboardData } = useDashboard();
+  const { restaurant, user } = dashboardData;
+
+  return (
+    <div className="relative w-full min-h-screen bg-[#111111] font-jakarta text-white select-none overflow-hidden">
+      
+      {/* Dark Overlay when form is open */}
+      <AnimatePresence>
+        {showOnboarding && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-10"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* HEADER */}
+      <div className="absolute top-0 left-0 right-0 h-[113px] border-b border-white/10">
+        {/* Left - Logo + Restaurant */}
+        <div className="absolute left-10 top-[14px] flex items-center gap-5">
+          {/* Breakr Logo */}
+          <div className="w-[47px] h-[47px] bg-black rounded-[15px] flex items-center justify-center">
+            <img src={boltIcon} alt="Breakr" className="w-[21px]" />
+          </div>
+          
+          {/* Restaurant Info */}
+          <div className="flex items-center gap-[6px]">
+            <div className="w-[46px] h-[46px] rounded-full bg-[#344036]" />
+            <div>
+              <div className="font-semibold text-[14px] text-[#514F43]">{restaurant.name}</div>
+              <div className="font-medium text-[10px] text-[#A39888]">{restaurant.category}</div>
+            </div>
+          </div>
+          
+          {/* Dropdown */}
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <path d="M4 6L8 10L12 6" stroke="#959387" strokeWidth="1.4" fill="none"/>
+          </svg>
+        </div>
+
+        {/* Right - User Profile (Only shows if name is not default "Usuário" or if specifically requested to show always) */}
+        {/* User requested: "aparecer so quando preencher". We check if it differs from default or is just truthy? 
+            Let's assume if it's "Usuário" (default), we might hide it OR show it. 
+            The user said "fica fixo esses dados para clients diferentes". 
+            Since I changed default to "Usuário", showing "Usuário" is safe. 
+            But to be cleaner, let's hide if it's the placeholder "Usuário" OR show the dynamic value.
+            Actually, the Context default is "Usuário". 
+            Let's show it, because "Usuário" is generic. 
+            OR, strict interpretation: "aparecer so quando preencher" -> Hide if it is the default value.
+        */}
+        {(user.name && user.name !== "Usuário") && (
+            <div className="absolute right-[55px] top-[28px] flex items-center gap-[11px]">
+            <div className="w-[46px] h-[46px] rounded-full bg-[#FDD688] flex items-center justify-center">
+                <span className="font-semibold text-[14px] text-black">{user.initials}</span>
+            </div>
+            <div>
+                <div className="font-medium text-[14px] text-white">{user.name}</div>
+                <div className="font-medium text-[10px] text-[#A0A0A0]">{user.role}</div>
+            </div>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M3.75 6.75L9 12L14.25 6.75" stroke="#959387" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            </div>
+        )}
+      </div>
+
+      {/* MAIN CONTENT - Responsive Grid */}
+      <div className="pt-[140px] px-10 h-full">
+        <div className="flex items-start gap-8 max-w-[1400px] mx-auto">
+          
+          {/* LEFT COLUMN - Fixed width */}
+          <div className="flex-shrink-0 w-[320px]">
+            {/* Circles Row */}
+            <div className="flex items-center gap-[22px] mb-[25px]">
+              {/* Yellow Circle */}
+              <div 
+                className="w-[50px] h-[50px] bg-[#FFC100] flex items-center justify-center"
+                style={{ borderRadius: '60.99px 60.99px 60.99px 10px' }}
+              >
+                <img src={boltIcon} alt="Bolt" className="w-[21px] h-[21px]" />
+              </div>
+              
+              {/* Locked Circle 1 */}
+              <div className="w-[55px] h-[54px] rounded-full border border-black/25 flex items-center justify-center">
+                <img src={lockIcon} alt="Lock" className="w-[20px] h-[20px]" />
+              </div>
+              
+              {/* Locked Circle 2 */}
+              <div className="w-[55px] h-[54px] rounded-full border border-black/25 flex items-center justify-center">
+                <img src={lockIcon} alt="Lock" className="w-[20px] h-[20px]" />
+              </div>
+            </div>
+
+            {/* Welcome Text */}
+            <div className="mb-[80px]">
+              <p className="font-semibold text-[29px] leading-[38px] text-white">
+                Bem-vindo à Revolução Breakr. Em até 40 dias, seu restaurante <span className="font-bold">lucrando mais</span>, usando melhor o faturamento que você já tem hoje.
+              </p>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex items-center gap-8">
+              {!showOnboarding && (
+                <motion.button
+                  initial={{ opacity: 1 }}
+                  exit={{ opacity: 0, x: 100 }}
+                  transition={{ duration: 0.3 }}
+                  onClick={() => setShowOnboarding(true)}
+                  className="flex items-center justify-center gap-[17px] w-[192px] h-[57px] bg-[#FFC100] rounded-full hover:opacity-90 transition-opacity"
+                  style={{ padding: '16px 16px 16px 23px' }}
+                >
+                <span className="font-semibold text-[14px] text-black whitespace-nowrap">Começar Desafio</span>
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M6.75 3.75L12 9L6.75 14.25" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </motion.button>
+              )}
+            </div>
+          </div>
+
+          {/* CENTER - Video Card */}
+          <div 
+            className="flex-shrink-0 w-[346px] h-[529px] bg-black rounded-[14px] relative overflow-hidden"
+          >
+            {/* Play Button */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <button className="w-[60px] h-[60px] rounded-full border-2 border-white/30 flex items-center justify-center hover:border-white/50 transition-colors bg-transparent">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M8 5L19 12L8 19V5Z" fill="white"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Time */}
+            <div className="absolute top-8 right-6 font-semibold text-[12px] text-white">
+              0:40
+            </div>
+
+            {/* Bottom Text */}
+            <div className="absolute bottom-8 left-8">
+              <div className="font-semibold text-[12px] text-white mb-[3px]">Gustavo Aqui!</div>
+              <div className="font-normal text-[12px] text-white">Antes de começar, um papinho</div>
+            </div>
+          </div>
+
+          {/* RIGHT - Cards Container */}
+          <div className="relative flex-shrink-0">
+            {/* Main Card */}
+            <div 
+              className="w-[349px] h-[506px] bg-[#1D1D1D] rounded-[10px] relative cursor-pointer hover:bg-[#252525] transition-colors"
+              onClick={() => setShowOnboarding(true)}
+            >
+              {/* Badge */}
+              <div className="absolute top-[50px] right-[29px] px-2 py-2 bg-white/5 rounded-[6px]">
+                <span className="font-semibold text-[10px] text-white/75">10% Completo</span>
+              </div>
+
+              {/* Icon Circle */}
+              <div className="absolute top-[38px] left-[39px] w-[53px] h-[53px] bg-white/5 rounded-full flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.75)" strokeWidth="1.5"/>
+                  <path d="M10 8.5H14M10.3 12H13.7M12 15.5V16.5M12 7.5V8.5" stroke="rgba(255,255,255,0.75)" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </div>
+
+              {/* Label */}
+              <div className="absolute top-[110px] left-[39px] font-semibold text-[12px] text-white/50">
+                Finanças & Custos
+              </div>
+
+              {/* Title */}
+              <div className="absolute top-[132px] left-[39px] w-[191px] font-semibold text-[25px] leading-[107%] text-white/80">
+                Vamos falar de custos, faturamento e despesas?
+              </div>
+
+              {/* Description */}
+              <div className="absolute top-[270px] left-[39px] w-[181px] font-medium text-[13px] leading-[16px] text-white/55">
+                Hora de entendermos quanto você tem de custos visíveis e invisíveis.
+              </div>
+
+              {/* Lock Icon */}
+              <div className="absolute top-[270px] right-10">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 14.5V16.5M7.5 10.5V7.5C7.5 5.01 9.51 3 12 3C14.49 3 16.5 5.01 16.5 7.5V10.5M7.875 21H16.125C17.16 21 18 20.16 18 19.125V12.375C18 11.34 17.16 10.5 16.125 10.5H7.875C6.84 10.5 6 11.34 6 12.375V19.125C6 20.16 6.84 21 7.875 21Z" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </div>
+
+              {/* Footer */}
+              <div className="absolute bottom-[62px] left-10 font-semibold text-[12px] text-[#F5F2ED] cursor-pointer hover:opacity-80">
+                Iniciar
+              </div>
+              <div className="absolute bottom-[62px] right-10 font-semibold text-[12px] text-[#F5F2ED]">
+                1/{onboardingQuestions.length}
+              </div>
+            </div>
+
+            {/* Blurred Card (behind) */}
+            <div 
+              className="absolute top-[10px] left-[360px] w-[330px] h-[479px] bg-[#212121] rounded-[14px] opacity-25"
+              style={{ filter: 'blur(2px)' }}
+            >
+              {/* Icon */}
+              <div className="absolute top-[30px] right-[30px] w-[50px] h-[50px] bg-white/5 rounded-full flex items-center justify-center">
+                <svg width="23" height="23" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.75)" strokeWidth="1.5"/>
+                </svg>
+              </div>
+
+              {/* Dia 01 Badge */}
+              <div className="absolute top-[110px] left-10 px-4 py-2 bg-white rounded-full">
+                <span className="font-semibold text-[11px] text-black">Dia 01</span>
+              </div>
+
+              {/* Title */}
+              <div className="absolute top-[152px] left-11 w-[181px] font-semibold text-[24px] leading-[30px] text-white/80">
+                Vamos falar de custos, faturamento e despesas?
+              </div>
+
+              {/* Description */}
+              <div className="absolute top-[282px] left-11 w-[171px] font-medium text-[13px] leading-[17px] text-white/55">
+                Hora de entendermos quanto você tem de custos visíveis e invisíveis.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Onboarding Form */}
+      {showOnboarding && (
+        <div className="fixed inset-0 z-20">
+          <OnboardingForm 
+            onClose={() => setShowOnboarding(false)} 
+            onComplete={() => {
+              setShowOnboarding(false);
+              if (onComplete) onComplete();
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default LandingPage;

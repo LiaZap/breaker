@@ -1,0 +1,1064 @@
+import React, { useState } from 'react';
+
+// ============ DATA ============
+// Constants moved to DashboardContext
+
+
+// ============ CARD: Ficha Técnica ============
+const FichaTecnicaCard = ({ item, onClick }) => (
+  <div
+    className="bg-[#1B1B1D] border border-[#2A2A2C] rounded-[16px] p-4 flex flex-col gap-3 cursor-pointer hover:border-[#F5A623]/40 hover:scale-[1.01] transition-all"
+    onClick={onClick}
+  >
+    <div className="flex items-start justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-[36px] h-[36px] rounded-[10px] bg-[#252527] flex items-center justify-center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <rect x="4" y="2" width="16" height="20" rx="2" stroke="#959387" strokeWidth="1.5"/>
+            <path d="M8 6H16M8 10H12M8 14H16" stroke="#959387" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div className="font-semibold text-[13px] text-white">{item.name}</div>
+          <div className="text-[10px] text-[#868686]">{item.type}</div>
+        </div>
+      </div>
+      {item.progress !== null && (
+        <div className="bg-[#00B37E]/15 text-[#00B37E] text-[11px] font-semibold px-2.5 py-1 rounded-full">
+          {item.progress}%
+        </div>
+      )}
+    </div>
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <div className="w-[20px] h-[20px] rounded-full bg-[#252527] flex items-center justify-center">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+            <rect x="4" y="2" width="16" height="20" rx="2" stroke="#959387" strokeWidth="2"/>
+          </svg>
+        </div>
+        <span className="text-[11px] text-[#868686]">{item.insumos} Insumos</span>
+      </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onClick && onClick(); }}
+        className="flex items-center gap-1 text-[11px] text-white font-medium hover:text-[#F5A623] transition-colors"
+      >
+        Adicionar
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+          <path d="M4 12L12 4M12 4H6M12 4V10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <div className="w-full h-px bg-[#2A2A2C]" />
+    <div className="flex flex-col gap-1.5">
+      <div className="flex justify-between text-[11px]">
+        <span className="text-[#868686]">Insumos</span>
+        <span className="text-white">{item.custoInsumos}</span>
+      </div>
+      <div className="flex justify-between text-[11px]">
+        <span className="text-[#868686]">Embalagem</span>
+        <span className="text-white">{item.custoEmbalagem}</span>
+      </div>
+    </div>
+    <div className="w-full h-px bg-[#2A2A2C]" />
+    <div className="flex flex-col gap-1.5">
+      <div className="flex justify-between text-[11px]">
+        <span className="text-[#868686]">Rendimento</span>
+        <span className="text-white">{item.rendimento}</span>
+      </div>
+      <div className="flex justify-between text-[11px]">
+        <span className="text-[#868686]">Custo</span>
+        <span className="text-white font-medium">{item.custoTotal}</span>
+      </div>
+    </div>
+  </div>
+);
+
+// ============ CARD: Insumo ============
+const InsumoCard = ({ item, onClick }) => (
+  <div
+    className="bg-[#1B1B1D] border border-[#2A2A2C] rounded-[16px] p-4 flex flex-col gap-3 cursor-pointer hover:border-[#F5A623]/40 hover:scale-[1.01] transition-all"
+    onClick={onClick}
+  >
+    <div className="flex items-start justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-[36px] h-[36px] rounded-[10px] bg-[#252527] flex items-center justify-center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <rect x="4" y="2" width="16" height="20" rx="2" stroke="#959387" strokeWidth="1.5"/>
+            <path d="M8 6H16M8 10H12M8 14H16" stroke="#959387" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div className="font-semibold text-[13px] text-white">{item.name}</div>
+          <div className="text-[10px] text-[#868686]">{item.category}</div>
+        </div>
+      </div>
+      <div className="bg-[#2A2A2C] text-[#868686] text-[10px] font-medium px-2.5 py-1 rounded-full border border-[#3A3A3C]">
+        Insumo
+      </div>
+    </div>
+    <div className="w-full h-px bg-[#2A2A2C]" />
+    <div className="flex flex-col gap-1.5">
+      <div className="flex justify-between text-[11px]">
+        <span className="text-[#868686]">Rendimento</span>
+        <span className="text-white">{item.rendimento}</span>
+      </div>
+      <div className="flex justify-between text-[11px]">
+        <span className="text-[#868686]">Custo</span>
+        <span className="text-white font-medium">{item.custo}</span>
+      </div>
+    </div>
+  </div>
+);
+
+// ============ MODAL: Editar/Criar Insumo ============
+const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
+  const isEditing = !!insumo.id;
+  const [nome, setNome] = useState(insumo.name || '');
+  const [categoria, setCategoria] = useState(insumo.category || 'Proteínas');
+  
+  // Safe parsing for creation vs edit
+  const safeRendimento = insumo.rendimento || '0gr';
+  const qty = safeRendimento.replace(/[^0-9]/g, '');
+  const unitMatch = safeRendimento.replace(/[0-9]/g, '');
+  
+  const [rendimentoQty, setRendimentoQty] = useState(qty || '');
+  const [rendimentoUnit, setRendimentoUnit] = useState(unitMatch || 'gr');
+  
+  const safeCusto = insumo.custo || '0,00';
+  const [custo, setCusto] = useState(safeCusto.replace('R$ ', '').replace('R$', '').trim());
+
+  const { dashboardData } = useDashboard();
+  const categoryOptions = dashboardData.operational?.categories?.insumos || ['Proteínas', 'Grãos', 'Molhos', 'Legumes', 'Temperos', 'Óleos', 'Laticínios', 'Outros'];
+
+  const handleSave = () => {
+    if (!nome.trim()) return;
+    onSave({
+      ...insumo,
+      id: insumo.id || Date.now().toString(), // Generate ID if new
+      name: nome,
+      category: categoria,
+      rendimento: `${rendimentoQty}${rendimentoUnit}`,
+      custo: `R$ ${custo}`,
+    });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-[90vw] max-w-[480px] bg-[#1B1B1D] rounded-[20px] p-8 shadow-2xl border border-[#2A2A2C]">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h2 className="text-[20px] font-bold text-white">{isEditing ? 'Editar Insumo' : 'Criar Insumo'}</h2>
+            <p className="text-[12px] text-[#868686] mt-1">{isEditing ? 'Atualize os dados do insumo' : 'Cadastre um novo insumo'}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {isEditing && (
+              <button
+                onClick={() => onDelete(insumo.id)}
+                className="w-[36px] h-[36px] rounded-[10px] bg-[#252527] flex items-center justify-center hover:bg-red-500/10 hover:text-red-500 text-[#868686] transition-colors"
+                title="Excluir Insumo"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            )}
+            <button className="w-[36px] h-[36px] rounded-[10px] bg-[#252527] flex items-center justify-center hover:bg-[#333] transition-colors" onClick={onClose}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6L18 18" stroke="#868686" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Form */}
+        <div className="flex flex-col gap-5">
+          {/* Nome */}
+          <div>
+            <label className="block text-[12px] text-[#868686] mb-2">Nome</label>
+            <input
+              type="text"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[12px] px-4 py-3.5 text-[14px] text-white outline-none focus:border-[#F5A623] transition-colors"
+              placeholder="Ex: Arroz Branco"
+            />
+          </div>
+
+          {/* Categoria */}
+          <div>
+            <label className="block text-[12px] text-[#868686] mb-2">Categoria</label>
+            <div className="relative">
+              <select
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[12px] px-4 py-3.5 text-[14px] text-white outline-none focus:border-[#F5A623] transition-colors appearance-none cursor-pointer"
+              >
+                {categoryOptions.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                 <path d="M6 9L12 15L18 9" stroke="#868686" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          {/* Rendimento + Custo */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[12px] text-[#868686] mb-2">Rendimento</label>
+              <div className="flex items-center bg-[#252527] border border-[#2A2A2C] rounded-[12px] overflow-hidden focus-within:border-[#F5A623] transition-colors">
+                <input
+                  type="text"
+                  value={rendimentoQty}
+                  onChange={(e) => setRendimentoQty(e.target.value)}
+                  className="w-full bg-transparent px-4 py-3.5 text-[14px] text-white outline-none"
+                  placeholder="0"
+                />
+                <select
+                  value={rendimentoUnit}
+                  onChange={(e) => setRendimentoUnit(e.target.value)}
+                  className="bg-transparent text-[13px] text-[#868686] pr-3 outline-none appearance-none cursor-pointer"
+                >
+                  <option value="gr">gr</option>
+                  <option value="ml">ml</option>
+                  <option value="un">un</option>
+                  <option value="kg">kg</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-[12px] text-[#868686] mb-2">Custo</label>
+              <div className="flex items-center bg-[#252527] border border-[#2A2A2C] rounded-[12px] overflow-hidden focus-within:border-[#F5A623] transition-colors">
+                <span className="text-[13px] text-[#868686] pl-4 shrink-0">R$</span>
+                <input
+                  type="text"
+                  value={custo}
+                  onChange={(e) => setCusto(e.target.value)}
+                  className="flex-1 bg-transparent px-2 py-3.5 text-[14px] text-white outline-none"
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between mt-8 pt-4">
+          <button onClick={onClose} className="text-[14px] text-[#F5A623] font-medium hover:text-[#E5961E] transition-colors">
+            Cancelar
+          </button>
+          <button onClick={handleSave} className="bg-[#F5A623] text-black font-semibold text-[14px] px-8 py-3.5 rounded-[12px] hover:bg-[#E5961E] transition-colors">
+            {isEditing ? 'Atualizar Insumo' : 'Salvar Insumo'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+
+// ============ Available insumos pool ============
+const availableInsumosPool = [
+  { id: 'a1', name: 'Filé de Frango', category: 'Proteínas', defaultQty: '200', unit: 'gr', price: '10,00' },
+  { id: 'a2', name: 'Arroz Branco', category: 'Grãos', defaultQty: '150', unit: 'gr', price: '3,50' },
+  { id: 'a3', name: 'Feijão Preto', category: 'Grãos', defaultQty: '100', unit: 'gr', price: '4,20' },
+  { id: 'a4', name: 'Molho Madeira', category: 'Molhos', defaultQty: '80', unit: 'ml', price: '8,00' },
+  { id: 'a5', name: 'Batata Inglesa', category: 'Legumes', defaultQty: '200', unit: 'gr', price: '2,80' },
+  { id: 'a6', name: 'Cebola', category: 'Legumes', defaultQty: '50', unit: 'gr', price: '1,50' },
+  { id: 'a7', name: 'Alho', category: 'Temperos', defaultQty: '10', unit: 'gr', price: '0,80' },
+  { id: 'a8', name: 'Azeite de Oliva', category: 'Óleos', defaultQty: '15', unit: 'ml', price: '2,50' },
+  { id: 'a9', name: 'Sal', category: 'Temperos', defaultQty: '5', unit: 'gr', price: '0,10' },
+  { id: 'a10', name: 'Pimenta do Reino', category: 'Temperos', defaultQty: '3', unit: 'gr', price: '0,40' },
+  { id: 'a11', name: 'Manteiga', category: 'Laticínios', defaultQty: '20', unit: 'gr', price: '1,80' },
+  { id: 'a12', name: 'Queijo Parmesão', category: 'Laticínios', defaultQty: '30', unit: 'gr', price: '5,20' },
+];
+
+// ============ MODAL: Criar/Editar Ficha Técnica ============
+const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => {
+  const isEditing = !!editingFicha;
+  const [nome, setNome] = useState(editingFicha ? editingFicha.name : '');
+  const { dashboardData } = useDashboard();
+  const fichaCategoryOptions = dashboardData.operational?.categories?.fichas || ['Prato Principal', 'Entrada', 'Sobremesa', 'Bebida', 'Acompanhamento', 'Insumo Preparado'];
+  const insumoCategoryOptions = dashboardData.operational?.categories?.insumos || ['Proteínas', 'Grãos', 'Vinhos', 'Molhos', 'Legumes', 'Temperos', 'Óleos', 'Laticínios', 'Outros'];
+
+  const [categoria, setCategoria] = useState(editingFicha ? editingFicha.type : fichaCategoryOptions[0]);
+  const [rendimento, setRendimento] = useState(editingFicha ? editingFicha.rendimento.replace(/[^0-9]/g, '') : '200');
+  const [custoEmbalagem, setCustoEmbalagem] = useState(editingFicha ? editingFicha.custoEmbalagem.replace('R$', '') : '');
+  const [searchInsumo, setSearchInsumo] = useState('');
+  const [addedInsumos, setAddedInsumos] = useState(() => {
+    if (editingFicha && editingFicha.insumos > 0) {
+      return availableInsumosPool.slice(0, editingFicha.insumos).map(i => ({ ...i, qty: i.defaultQty }));
+    }
+    return [];
+  });
+  const [showNewInsumoForm, setShowNewInsumoForm] = useState(false);
+  const [newInsumo, setNewInsumo] = useState({ name: '', category: insumoCategoryOptions[0], qty: '200', unit: 'gr', price: '' });
+
+  const handleSave = () => {
+    if (!nome.trim()) return;
+    const custoTotalInsumos = addedInsumos.reduce((sum, i) => {
+      const price = parseFloat(i.price.replace(',', '.')) || 0;
+      return sum + price;
+    }, 0);
+    const custoEmb = parseFloat(custoEmbalagem.replace(',', '.')) || 0;
+    // Create new ficha object
+    const fichaData = {
+      id: editingFicha ? editingFicha.id : Date.now().toString(),
+      name: nome,
+      type: categoria,
+      progress: editingFicha ? editingFicha.progress : 0, // Default progress
+      insumos: addedInsumos.length,
+      custoInsumos: `R$${custoTotalInsumos.toFixed(2).replace('.', ',')}`,
+      custoEmbalagem: `R$${custoEmb.toFixed(2).replace('.', ',')}`,
+      rendimento: `${rendimento}gr`, // Assuming grams for now
+      custoTotal: `R$ ${(custoTotalInsumos + custoEmb).toFixed(2).replace('.', ',')}`
+    };
+    onSave(fichaData, isEditing);
+    onClose();
+  };
+
+  // Filter available insumos based on search and exclude already added
+  const addedIds = new Set(addedInsumos.map(i => i.id));
+  const filteredInsumos = availableInsumosPool.filter(i =>
+    !addedIds.has(i.id) &&
+    (searchInsumo === '' || i.name.toLowerCase().includes(searchInsumo.toLowerCase()) || i.category.toLowerCase().includes(searchInsumo.toLowerCase()))
+  );
+
+  const handleAddInsumo = (insumo) => {
+    setAddedInsumos(prev => [...prev, { ...insumo, qty: insumo.defaultQty }]);
+  };
+
+  const handleRemoveInsumo = (id) => {
+    setAddedInsumos(prev => prev.filter(i => i.id !== id));
+  };
+
+  const handleCreateNewInsumo = () => {
+    if (!newInsumo.name.trim() || !newInsumo.price.trim()) return;
+    const created = {
+      id: `new_${Date.now()}`,
+      name: newInsumo.name,
+      category: newInsumo.category,
+      defaultQty: newInsumo.qty,
+      qty: newInsumo.qty,
+      unit: newInsumo.unit,
+      price: newInsumo.price,
+    };
+    setAddedInsumos(prev => [...prev, created]);
+    setNewInsumo({ name: '', category: insumoCategoryOptions[0], qty: '200', unit: 'gr', price: '' });
+    setShowNewInsumoForm(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="relative w-[90vw] max-w-[900px] h-[85vh] max-h-[700px] bg-[#1B1B1D] rounded-[20px] flex overflow-hidden shadow-2xl border border-[#2A2A2C]">
+
+        {/* LEFT PANEL - Insumos */}
+        <div className="w-[380px] shrink-0 bg-[#151515] flex flex-col border-r border-[#2A2A2C]">
+          {/* Search Bar */}
+          <div className="p-5">
+            <div className="flex items-center bg-[#1E1E1E] rounded-[12px] border border-[#2A2A2C] px-4 py-3">
+              <input
+                type="text"
+                placeholder="Encontrar Insumos"
+                value={searchInsumo}
+                onChange={(e) => setSearchInsumo(e.target.value)}
+                className="flex-1 bg-transparent text-[13px] text-white placeholder-[#555] outline-none"
+              />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="7" stroke="#555" strokeWidth="1.5"/>
+                <path d="M16.5 16.5L21 21" stroke="#555" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-5 flex flex-col gap-2">
+            {/* Added Insumos Section */}
+            {addedInsumos.length > 0 && (
+              <>
+                <div className="mb-1">
+                  <div className="text-[13px] font-semibold text-white">Insumos</div>
+                  <div className="text-[11px] text-[#868686]">Insumos Adicionados</div>
+                </div>
+                {addedInsumos.map((insumo) => (
+                  <div
+                    key={insumo.id}
+                    className="bg-[#1E1E1E] rounded-[14px] p-3.5 flex items-center gap-3 border border-[#2A2A2C] cursor-pointer hover:border-[#F5A623]/30 transition-colors group"
+                    onClick={() => handleRemoveInsumo(insumo.id)}
+                  >
+                    <div className="w-[38px] h-[38px] rounded-[10px] bg-[#252527] flex items-center justify-center shrink-0">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke="#868686" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-[13px] text-white">{insumo.name}</div>
+                      <div className="text-[11px] text-[#868686]">{insumo.qty}{insumo.unit}  R$ {insumo.price}</div>
+                    </div>
+                    <div className="bg-[#F5A623] text-black text-[10px] font-semibold px-3 py-1.5 rounded-full flex items-center gap-1 shrink-0 group-hover:bg-red-500 group-hover:text-white transition-colors">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#00B37E] group-hover:bg-white transition-colors" />
+                      <span className="group-hover:hidden">Adicionado</span>
+                      <span className="hidden group-hover:inline">Remover</span>
+                    </div>
+                  </div>
+                ))}
+                <div className="w-full h-px bg-[#2A2A2C] my-2" />
+              </>
+            )}
+
+            {/* Available Insumos to add */}
+            {filteredInsumos.length > 0 && (
+              <>
+                <div className="mb-1">
+                  <div className="text-[13px] font-semibold text-white">Disponíveis</div>
+                  <div className="text-[11px] text-[#868686]">Clique para adicionar</div>
+                </div>
+                {filteredInsumos.map((insumo) => (
+                  <div
+                    key={insumo.id}
+                    className="bg-[#1A1A1A] rounded-[14px] p-3.5 flex items-center gap-3 border border-[#222] cursor-pointer hover:border-[#F5A623]/40 hover:bg-[#1E1E1E] transition-all"
+                    onClick={() => handleAddInsumo(insumo)}
+                  >
+                    <div className="w-[38px] h-[38px] rounded-[10px] bg-[#202020] flex items-center justify-center shrink-0">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 5V19M5 12H19" stroke="#555" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-[13px] text-[#AAA]">{insumo.name}</div>
+                      <div className="text-[10px] text-[#555]">{insumo.category} • {insumo.defaultQty}{insumo.unit}</div>
+                    </div>
+                    <div className="text-[11px] text-[#555]">R$ {insumo.price}</div>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {filteredInsumos.length === 0 && addedInsumos.length === 0 && (
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-[12px] text-[#555]">Nenhum insumo encontrado</p>
+              </div>
+            )}
+          </div>
+
+          {/* New Insumo Form / Button */}
+          <div className="p-4 border-t border-[#2A2A2C]">
+            {showNewInsumoForm ? (
+              <div className="flex flex-col gap-3">
+                <div className="text-[12px] font-semibold text-white">Novo Insumo</div>
+                <input
+                  type="text"
+                  placeholder="Nome do insumo"
+                  value={newInsumo.name}
+                  onChange={(e) => setNewInsumo(p => ({ ...p, name: e.target.value }))}
+                  className="w-full bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] px-3 py-2.5 text-[12px] text-white placeholder-[#555] outline-none focus:border-[#F5A623] transition-colors"
+                  autoFocus
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={newInsumo.category}
+                    onChange={(e) => setNewInsumo(p => ({ ...p, category: e.target.value }))}
+                    className="bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] px-3 py-2.5 text-[12px] text-white outline-none appearance-none"
+                  >
+                    {insumoCategoryOptions.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <div className="flex items-center bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] overflow-hidden">
+                    <input
+                      type="text"
+                      placeholder="Qtd"
+                      value={newInsumo.qty}
+                      onChange={(e) => setNewInsumo(p => ({ ...p, qty: e.target.value }))}
+                      className="w-12 bg-transparent px-3 py-2.5 text-[12px] text-white outline-none"
+                    />
+                    <select
+                      value={newInsumo.unit}
+                      onChange={(e) => setNewInsumo(p => ({ ...p, unit: e.target.value }))}
+                      className="bg-transparent text-[11px] text-[#868686] outline-none appearance-none pr-2"
+                    >
+                      <option value="gr">gr</option>
+                      <option value="ml">ml</option>
+                      <option value="un">un</option>
+                      <option value="kg">kg</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex items-center bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] overflow-hidden">
+                  <span className="text-[12px] text-[#868686] pl-3 shrink-0">R$</span>
+                  <input
+                    type="text"
+                    placeholder="Preço"
+                    value={newInsumo.price}
+                    onChange={(e) => setNewInsumo(p => ({ ...p, price: e.target.value }))}
+                    className="flex-1 bg-transparent px-2 py-2.5 text-[12px] text-white outline-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowNewInsumoForm(false)}
+                    className="flex-1 text-[12px] text-[#868686] py-2 rounded-[10px] hover:bg-[#1E1E1E] transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleCreateNewInsumo}
+                    className="flex-1 bg-[#F5A623] text-black text-[12px] font-semibold py-2 rounded-[10px] hover:bg-[#E5961E] transition-colors"
+                  >
+                    Criar e Adicionar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowNewInsumoForm(true)}
+                className="flex items-center gap-3 w-full hover:bg-[#1E1E1E] rounded-[12px] p-2 transition-colors"
+              >
+                <div className="w-[40px] h-[40px] rounded-full bg-[#252527] flex items-center justify-center">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5V19M5 12H19" stroke="#868686" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-[13px] text-white">Adicionar Insumo</div>
+                  <div className="text-[11px] text-[#868686]">Cadastre um novo insumo</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 6L15 12L9 18" stroke="#868686" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT PANEL - Form */}
+        <div className="flex-1 flex flex-col bg-[#1B1B1D] p-8">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-10">
+            <div>
+              <h2 className="text-[20px] font-bold text-white">{isEditing ? 'Editar Ficha Técnica' : 'Criar Ficha Técnica'}</h2>
+              <p className="text-[12px] text-[#868686] mt-1">{isEditing ? 'Atualize os dados da Ficha Técnica' : 'Cadastre uma nova Ficha Técnica'}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {isEditing && (
+                <button
+                  onClick={() => onDelete(editingFicha.id)}
+                  className="w-[40px] h-[40px] rounded-[10px] bg-[#252527] flex items-center justify-center hover:bg-red-500/10 hover:text-red-500 text-[#868686] transition-colors group"
+                  title="Excluir Ficha Técnica"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              )}
+              <button className="w-[40px] h-[40px] rounded-[10px] bg-[#252527] flex items-center justify-center hover:bg-[#333] transition-colors" onClick={onClose}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6L18 18" stroke="#868686" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Form Fields */}
+          <div className="flex flex-col gap-6 flex-1">
+            {/* Nome */}
+            <div>
+              <label className="block text-[12px] text-[#868686] mb-2">Nome</label>
+              <input
+                type="text"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                placeholder="Nome da ficha técnica"
+                className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[12px] px-4 py-3.5 text-[14px] text-white placeholder-[#555] outline-none focus:border-[#F5A623] transition-colors"
+              />
+            </div>
+
+            {/* Categoria */}
+            <div>
+              <label className="block text-[12px] text-[#868686] mb-2">Categoria</label>
+              <div className="relative">
+                <select
+                  value={categoria}
+                  onChange={(e) => setCategoria(e.target.value)}
+                  className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[12px] px-4 py-3.5 text-[14px] text-white outline-none appearance-none cursor-pointer focus:border-[#F5A623] transition-colors"
+                >
+                  {fichaCategoryOptions.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <path d="M6 9L12 15L18 9" stroke="#868686" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+
+            {/* Rendimento + Custo Embalagem */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[12px] text-[#868686] mb-2">Rendimento</label>
+                <div className="flex items-center bg-[#252527] border border-[#2A2A2C] rounded-[12px] overflow-hidden focus-within:border-[#F5A623] transition-colors">
+                  <input
+                    type="text"
+                    value={rendimento}
+                    onChange={(e) => setRendimento(e.target.value)}
+                    className="w-[60px] min-w-0 bg-transparent px-4 py-3.5 text-[14px] text-white outline-none flex-1"
+                  />
+                  <span className="text-[13px] text-[#868686] pr-4 shrink-0">Gramas</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[12px] text-[#868686] mb-2">Custo da Embalagem</label>
+                <div className="flex items-center bg-[#252527] border border-[#2A2A2C] rounded-[12px] overflow-hidden focus-within:border-[#F5A623] transition-colors">
+                  <span className="text-[13px] text-[#868686] pl-4 shrink-0">R$</span>
+                  <input
+                    type="text"
+                    value={custoEmbalagem}
+                    onChange={(e) => setCustoEmbalagem(e.target.value)}
+                    placeholder=""
+                    className="flex-1 bg-transparent px-2 py-3.5 text-[14px] text-white outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Buttons */}
+          <div className="flex items-center justify-between mt-8 pt-4">
+            <button
+              onClick={onClose}
+              className="text-[14px] text-[#F5A623] font-medium hover:text-[#E5961E] transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSave}
+              className="bg-[#F5A623] text-black font-semibold text-[14px] px-8 py-3.5 rounded-[12px] hover:bg-[#E5961E] transition-colors"
+            >
+              {isEditing ? 'Atualizar Ficha Técnica' : 'Criar Ficha Técnica'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+import { useDashboard } from '../../context/DashboardContext';
+import CategoriesModal from './CategoriesModal';
+
+// ... (keep Modals and sub-components as is)
+
+// ============ MAIN COMPONENT ============
+const FichaTecnica = () => {
+  const { dashboardData, updateDashboardData } = useDashboard();
+  const [activeTab, setActiveTab] = useState('insumos');
+  const [modalFicha, setModalFicha] = useState(null);
+  
+  // Use Context Data with fallback
+  const fichas = dashboardData.operational?.fichas || [];
+  const insumos = dashboardData.operational?.insumos || [];
+  
+  const [editingInsumo, setEditingInsumo] = useState(null);
+  const [showCategoriesModal, setShowCategoriesModal] = useState(false);
+
+  const handleSaveFicha = (fichaData, isEditing) => {
+    let newFichas;
+    if (isEditing) {
+      newFichas = fichas.map(f => f.id === fichaData.id ? fichaData : f);
+    } else {
+      newFichas = [...fichas, fichaData];
+    }
+    
+    // Update Context
+    updateDashboardData({
+        operational: {
+            ...dashboardData.operational,
+            fichas: newFichas
+        }
+    });
+  };
+
+  const handleSaveInsumo = (updatedInsumo) => {
+    let newInsumos;
+    const exists = insumos.some(i => i.id === updatedInsumo.id);
+    
+    if (exists) {
+      newInsumos = insumos.map(i => i.id === updatedInsumo.id ? updatedInsumo : i);
+    } else {
+      newInsumos = [...insumos, updatedInsumo];
+    }
+    
+    // Update Context
+    updateDashboardData({
+        operational: {
+            ...dashboardData.operational,
+            insumos: newInsumos
+        }
+    });
+  };
+
+  const handleDeleteFicha = (id) => {
+    const newFichas = fichas.filter(f => String(f.id) !== String(id));
+    updateDashboardData({
+        operational: {
+            ...dashboardData.operational,
+            fichas: newFichas
+        }
+    });
+    setModalFicha(null);
+  };
+
+  const handleDeleteInsumo = (id) => {
+    const newInsumos = insumos.filter(i => String(i.id) !== String(id));
+     updateDashboardData({
+        operational: {
+            ...dashboardData.operational,
+            insumos: newInsumos
+        }
+    });
+    setEditingInsumo(null);
+  };
+
+  const handleDownloadTemplate = () => {
+    const header = "Nome,Categoria,Rendimento,Unidade,Custo\n";
+    const example = "Exemplo Insumo,Proteínas,200,gr,10.00\n";
+    const blob = new Blob([header + example], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'modelo_insumos.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+  };
+
+  const handleImportInsumos = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const text = e.target.result;
+        const lines = text.split('\n');
+        // Skip header
+        const newItems = [];
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            const cols = line.split(',');
+            if (cols.length >= 5) {
+                newItems.push({
+                    id: `imp_${Date.now()}_${i}`,
+                    name: cols[0].trim(),
+                    category: cols[1].trim(),
+                    rendimento: `${cols[2].trim()}${cols[3].trim()}`,
+                    custo: `R$ ${cols[4].trim()}`
+                });
+            }
+        }
+        
+        if (newItems.length > 0) {
+            // Smart Merge: Update existing items by name, add new ones
+            const updatedInsumos = [...insumos];
+            
+            newItems.forEach(newItem => {
+                const existingIndex = updatedInsumos.findIndex(
+                    i => i.name.toLowerCase().trim() === newItem.name.toLowerCase().trim()
+                );
+                
+                if (existingIndex >= 0) {
+                    // Update existing item (preserve ID)
+                    updatedInsumos[existingIndex] = {
+                        ...updatedInsumos[existingIndex],
+                        ...newItem,
+                        id: updatedInsumos[existingIndex].id // Keep original ID
+                    };
+                } else {
+                    // Add new item
+                    updatedInsumos.push(newItem);
+                }
+            });
+
+            updateDashboardData({
+                operational: {
+                    ...dashboardData.operational,
+                    insumos: updatedInsumos
+                }
+            });
+            alert(`${newItems.length} itens processados com sucesso!`);
+        }
+    };
+    reader.readAsText(file);
+    // Reset input
+    event.target.value = '';
+  };
+
+  return (
+    <div className="flex flex-col w-full h-full min-h-screen bg-[#101010] font-jakarta text-white">
+
+      {/* TOP AREA: Left Panel + Right Content */}
+      <div className="flex flex-col lg:flex-row flex-1">
+
+        {/* LEFT PANEL - Summary */}
+        <div className="w-full lg:w-[320px] xl:w-[380px] shrink-0 bg-[#101010] p-6 lg:p-8 flex flex-col gap-5 lg:border-r border-[#1E1E1E]">
+          {/* Breadcrumb */}
+          <div className="text-[11px] text-[#868686]">
+            <span className="text-[#555]">Breakr</span>
+            <span className="mx-1.5 text-[#555]">›</span>
+            <span className="text-[#F5A623]">Ficha Técnica</span>
+          </div>
+
+          {/* Title */}
+          <div>
+            <h1 className="text-[22px] font-bold text-white leading-tight">Insumos e Fichas<br/>Técnicas</h1>
+            <p className="text-[12px] text-[#868686] mt-2">Configure seus custos e veja dados e informações</p>
+          </div>
+
+          {/* Fichas Técnicas Stats */}
+          <div>
+            <h3 className="font-semibold text-[13px] text-white mb-3">Fichas Técnicas</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="text-[32px] font-bold text-white">{fichas.length}</div>
+                <div className="text-[11px] text-[#868686]">Fichas Técnicas</div>
+              </div>
+              <button className="w-[36px] h-[36px] rounded-[10px] bg-[#252527] flex items-center justify-center hover:bg-[#333] transition-colors">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <rect x="4" y="2" width="16" height="20" rx="2" stroke="#868686" strokeWidth="1.5"/>
+                  <path d="M8 6H16M8 10H12" stroke="#868686" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <div className="text-[10px] text-[#868686] mb-1">Custo Médio Embalagem</div>
+                <div className="text-[22px] font-bold text-white">R$1,29</div>
+                <div className="text-[10px] text-[#868686]">Por Pedido</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-[#868686] mb-1">Categorias</div>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <div className="flex -space-x-1">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="w-[14px] h-[14px] rounded-full bg-[#F5A623] border border-[#101010]" />
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-[#868686]">Aluguel +25 outras</span>
+                </div>
+                <div className="text-[10px] text-[#868686] mt-1">Gestão de Categorias</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full h-px bg-[#1E1E1E]" />
+
+          {/* Insumos Stats */}
+          <div>
+            <h3 className="font-semibold text-[13px] text-white mb-3">Insumos</h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[32px] font-bold text-white">{insumos.length}</div>
+                <div className="text-[11px] text-[#868686]">Insumos Cadastrados</div>
+              </div>
+              <button className="w-[36px] h-[36px] rounded-[10px] bg-[#252527] flex items-center justify-center hover:bg-[#333] transition-colors">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke="#868686" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* MIDDLE PANEL - Submenu */}
+        <div className="w-full lg:w-[220px] shrink-0 bg-[#131313] p-4 lg:py-6 lg:px-4 flex flex-col gap-4 lg:border-r border-[#1E1E1E]">
+          {/* Operacional Header */}
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <div className="font-semibold text-[13px] text-white">Operacional</div>
+              <div className="text-[10px] text-[#868686]">Gestão de Cardápio</div>
+            </div>
+            <button className="w-[32px] h-[32px] rounded-[8px] flex items-center justify-center hover:bg-[#1E1E1E] transition-colors">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M4 6H20M4 12H20M4 18H20" stroke="#868686" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* Insumos Tab */}
+          <button
+            onClick={() => setActiveTab('insumos')}
+            className={`flex items-center gap-3 p-3 rounded-[12px] transition-colors w-full text-left ${
+              activeTab === 'insumos' ? 'bg-[#1E1E1E]' : 'hover:bg-[#1A1A1A]'
+            }`}
+          >
+            <div className={`w-[36px] h-[36px] rounded-[10px] flex items-center justify-center ${
+              activeTab === 'insumos' ? 'bg-[#252527]' : 'bg-[#1A1A1A]'
+            }`}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill={activeTab === 'insumos' ? '#F5A623' : '#868686'}/>
+              </svg>
+            </div>
+            <div>
+              <div className={`font-medium text-[12px] ${activeTab === 'insumos' ? 'text-white' : 'text-[#868686]'}`}>Insumos</div>
+              <div className="text-[10px] text-[#555]">Gestão de insumos</div>
+            </div>
+            <div className="ml-auto bg-[#2A2A2C] text-[#868686] text-[9px] font-bold px-1.5 py-0.5 rounded-full">{String(insumos.length).padStart(2, '0')}</div>
+          </button>
+
+          {/* Ficha Técnica Tab */}
+          <button
+            onClick={() => setActiveTab('fichas')}
+            className={`flex items-center gap-3 p-3 rounded-[12px] transition-colors w-full text-left ${
+              activeTab === 'fichas' ? 'bg-[#1E1E1E]' : 'hover:bg-[#1A1A1A]'
+            }`}
+          >
+            <div className={`w-[36px] h-[36px] rounded-[10px] flex items-center justify-center ${
+              activeTab === 'fichas' ? 'bg-[#252527]' : 'bg-[#1A1A1A]'
+            }`}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill={activeTab === 'fichas' ? '#F5A623' : '#868686'}/>
+              </svg>
+            </div>
+            <div>
+              <div className={`font-medium text-[12px] ${activeTab === 'fichas' ? 'text-white' : 'text-[#868686]'}`}>Ficha Técnica</div>
+              <div className="text-[10px] text-[#555]">Gestão de ficha técnica</div>
+            </div>
+            <div className="ml-auto bg-[#2A2A2C] text-[#868686] text-[9px] font-bold px-1.5 py-0.5 rounded-full">{String(fichas.length).padStart(2, '0')}</div>
+          </button>
+        </div>
+
+        {/* RIGHT PANEL - Content */}
+        <div className="flex-1 flex flex-col min-w-0">
+
+          {/* Content Area */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Breadcrumb + Title + Actions */}
+            <div className="px-6 pt-6 pb-4">
+              <div className="text-[11px] text-[#868686] mb-2">
+                <span className="text-[#555]">Breakr</span>
+                <span className="mx-1.5 text-[#555]">›</span>
+                <span className="text-[#555]">{activeTab === 'insumos' ? 'Insumos' : 'Ficha Técnica'}</span>
+              </div>
+              
+              <div className="flex items-end justify-between">
+                  <div>
+                      <h2 className="text-[22px] font-bold text-white mb-1">
+                        {activeTab === 'insumos' ? 'Insumos' : 'Fichas Técnicas'}
+                      </h2>
+                      <p className="text-[12px] text-[#868686]">
+                        {activeTab === 'insumos' 
+                          ? 'Adicione insumos para compor ficha técnica'
+                          : 'Configure as fichas técnicas para precificar o produto'
+                        }
+                      </p>
+                  </div>
+                  
+                  {activeTab === 'insumos' && (
+                      <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setShowCategoriesModal(true)}
+                            className="bg-[#2A2A2C] hover:bg-[#333] text-white text-[11px] font-medium px-3 py-1.5 rounded-[8px] flex items-center gap-1.5 transition-colors"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                               <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            Categorias
+                          </button>
+
+                          <button 
+                              onClick={handleDownloadTemplate}
+                              className="text-[11px] font-medium text-[#F5A623] hover:text-[#E5961E] transition-colors flex items-center gap-1.5"
+                          >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                              Baixar Modelo
+                          </button>
+                          
+                          <label className="bg-[#252527] hover:bg-[#333] border border-[#2A2A2C] text-white text-[11px] font-medium px-3 py-1.5 rounded-[8px] transition-colors cursor-pointer flex items-center gap-1.5">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                              Importar CSV
+                              <input type="file" accept=".csv" onChange={handleImportInsumos} hidden />
+                          </label>
+                      </div>
+                  )}
+              </div>
+            </div>
+
+            {/* Cards Grid with grey background */}
+            <div className="bg-[#1B1B1D] mx-4 rounded-[16px] p-4 flex-1">
+              {activeTab === 'insumos' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {insumos.map((item) => (
+                    <InsumoCard key={item.id} item={item} onClick={() => setEditingInsumo(item)} />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {fichas.map((item) => (
+                    <FichaTecnicaCard key={item.id} item={item} onClick={() => setModalFicha(item)} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* FAB Button */}
+          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-40" style={{ marginLeft: '150px' }}>
+            <button
+              onClick={() => {
+                if (activeTab === 'insumos') {
+                  setEditingInsumo({}); // Empty object triggers "Create" mode
+                } else {
+                  setModalFicha('new');
+                }
+              }}
+              className="w-[52px] h-[52px] rounded-[14px] bg-[#F5A623] flex items-center justify-center shadow-lg hover:bg-[#E5961E] transition-colors hover:scale-105 active:scale-95"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12 5V19M5 12H19" stroke="black" strokeWidth="2.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal */}
+      {modalFicha && (
+        <CriarFichaTecnicaModal
+          onClose={() => setModalFicha(null)}
+          editingFicha={modalFicha !== 'new' ? modalFicha : null}
+          onSave={handleSaveFicha}
+          onDelete={handleDeleteFicha}
+        />
+      )}
+
+      {/* Editar Insumo Modal */}
+      {editingInsumo && (
+        <EditarInsumoModal
+          insumo={editingInsumo}
+          onClose={() => setEditingInsumo(null)}
+          onSave={handleSaveInsumo}
+          onDelete={handleDeleteInsumo}
+        />
+      )}
+
+      {/* Categories Modal */}
+      {showCategoriesModal && (
+        <CategoriesModal onClose={() => setShowCategoriesModal(false)} />
+      )}
+    </div>
+  );
+};
+
+export default FichaTecnica;

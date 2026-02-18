@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  hash      String   @unique
+  data      String   // JSON string containing all dashboard data
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
