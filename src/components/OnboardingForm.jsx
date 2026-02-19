@@ -81,17 +81,27 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
     }
   }, [dashboardData]);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleContinue = () => {
     if (currentStepIndex < totalSteps - 1) {
       setDirection(1);
       setCurrentStepIndex(prev => prev + 1);
     } else {
-      updateDashboardData(formData);
-      if (onComplete) onComplete(formData);
+      try {
+        setIsSubmitting(true);
+        updateDashboardData(formData);
+        if (onComplete) onComplete(formData);
+      } catch (error) {
+        console.error("Error finalizing onboarding:", error);
+        alert("Erro ao finalizar: " + (error.message || "Erro desconhecido"));
+        setIsSubmitting(false);
+      }
     }
   };
 
   const handleBack = () => {
+    if (isSubmitting) return;
     if (currentStepIndex > 0) {
       setDirection(-1);
       setCurrentStepIndex(prev => prev - 1);
@@ -313,14 +323,17 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                 <div className="flex items-center gap-4 mt-12">
                     <button
                         onClick={handleContinue}
-                        className="flex items-center justify-center gap-[10px] bg-[#FFC100] rounded-full h-[50px] px-8 hover:bg-[#ffdb65] transition-colors"
+                        disabled={isSubmitting}
+                        className={`flex items-center justify-center gap-[10px] bg-[#FFC100] rounded-full h-[50px] px-8 transition-colors ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#ffdb65]'}`}
                     >
                         <span className="font-['Plus_Jakarta_Sans'] font-bold text-[14px] text-black">
-                            {currentStepIndex === totalSteps - 1 ? 'Finalizar' : 'Continuar'}
+                            {isSubmitting ? 'Finalizando...' : (currentStepIndex === totalSteps - 1 ? 'Finalizar' : 'Continuar')}
                         </span>
-                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                            <path d="M6.75 3.75L12 9L6.75 14.25" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
+                        {!isSubmitting && (
+                          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                              <path d="M6.75 3.75L12 9L6.75 14.25" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
                     </button>
                     
                     {currentStepIndex > 0 && (
