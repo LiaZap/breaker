@@ -3,6 +3,64 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { onboardingQuestions } from '../data/onboardingQuestions';
 import { useDashboard } from '../context/DashboardContext';
 
+const AutocompleteField = ({ field, value, onChange }) => {
+    const [searchTerm, setSearchTerm] = useState(value || '');
+    const [isOpen, setIsOpen] = useState(false);
+    
+    useEffect(() => {
+        setSearchTerm(value || '');
+    }, [value]);
+
+    // Helper to normalize strings (remove accents and make lowercase)
+    const normalizeStr = (str) => 
+        str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : '';
+
+    const filteredOptions = field.options.filter(opt => 
+        normalizeStr(opt).includes(normalizeStr(searchTerm))
+    );
+
+    return (
+        <div className="relative">
+            <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    onChange(e.target.value);
+                    setIsOpen(true);
+                }}
+                onFocus={() => setIsOpen(true)}
+                onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+                placeholder={field.placeholder}
+                className="font-['Plus_Jakarta_Sans'] font-medium bg-transparent border-b border-[#333333] focus:border-white outline-none pb-2 transition-colors w-full"
+                style={{ fontSize: '18px', color: 'rgba(255, 255, 255, 0.9)' }}
+            />
+            <AnimatePresence>
+                {isOpen && filteredOptions.length > 0 && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
+                        className="absolute z-10 w-full mt-2 bg-[#1A1A1A] border border-[#333] rounded-lg shadow-xl max-h-48 overflow-y-auto"
+                    >
+                        {filteredOptions.map(opt => (
+                            <div
+                                key={opt}
+                                className="p-3 text-[14px] text-white/80 hover:bg-[#FFC100] hover:text-black cursor-pointer transition-colors"
+                                onClick={() => {
+                                    setSearchTerm(opt);
+                                    onChange(opt);
+                                    setIsOpen(false);
+                                }}
+                            >
+                                {opt}
+                            </div>
+                        ))}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [formData, setFormData] = useState({});
@@ -56,7 +114,16 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
   // Handler for group list (e.g. Partners, Employees) using an array in formData
   const handleGroupChange = (questionId, index, fieldId, value, type) => {
       let formattedValue = value;
-      if (type === 'currency') formattedValue = formatCurrency(value);
+      if (type === 'currency') {
+          formattedValue = formatCurrency(value);
+      } else if (fieldId === 'month') {
+          // Format MM/AAAA
+          let val = value.replace(/\D/g, ''); // Remove non-digits
+          if (val.length > 2) {
+              val = val.substring(0, 2) + '/' + val.substring(2, 6);
+          }
+          formattedValue = val;
+      }
 
       setFormData(prev => {
           const currentArray = prev[questionId] || [];
@@ -169,19 +236,46 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
   const renderComposite = (question) => {
       return (
           <div className={`${question.gridLayout ? 'grid grid-cols-2 gap-4' : 'flex flex-col gap-6'}`}>
-              {question.fields.map(field => (
-                  <div key={field.id}>
-                      <label className="block text-xs text-secondary mb-1 opacity-70">{field.label}</label>
-                      <input
-                        type="text"
-                        value={formData[question.id]?.[field.id] || ''}
-                        onChange={(e) => handleCompositeChange(question.id, field.id, e.target.value, field.type)}
-                        placeholder={field.placeholder}
-                        className="font-['Plus_Jakarta_Sans'] font-medium bg-transparent border-b border-[#333333] focus:border-white outline-none pb-2 transition-colors w-full"
-                        style={{ fontSize: '18px', color: 'rgba(255, 255, 255, 0.9)' }}
-                      />
-                  </div>
-              ))}
+              {question.fields.map(field => {
+                  // Check visibility logic
+                  if (field.dependsOn) {
+                      const dependencyValue = formData[question.id]?.[field.dependsOn];
+                      if (dependencyValue !== field.dependsValue) return null;
+                  }
+
+                  return (
+                    <div key={field.id}>
+                        <label className="block text-xs text-secondary mb-1 opacity-70">{field.label}</label>
+                        {field.type === 'select' ? (
+                             <select
+                                className="font-['Plus_Jakarta_Sans'] font-medium bg-transparent border-b border-[#333333] focus:border-white outline-none pb-2 transition-colors w-full text-[18px] text-[rgba(255,255,255,0.9)]"
+                                value={formData[question.id]?.[field.id] || ''}
+                                onChange={(e) => handleCompositeChange(question.id, field.id, e.target.value, field.type)}
+                             >
+                                <option value="" className="bg-[#1D1D1D]">Selecione</option>
+                                {field.options && field.options.map(opt => (
+                                    <option key={opt} value={opt} className="bg-[#1D1D1D]">{opt}</option>
+                                ))}
+                             </select>
+                        ) : field.type === 'autocomplete' ? (
+                            <AutocompleteField
+                                field={field}
+                                value={formData[question.id]?.[field.id] || ''}
+                                onChange={(val) => handleCompositeChange(question.id, field.id, val, field.type)}
+                            />
+                        ) : (
+                            <input
+                                type="text"
+                                value={formData[question.id]?.[field.id] || ''}
+                                onChange={(e) => handleCompositeChange(question.id, field.id, e.target.value, field.type)}
+                                placeholder={field.placeholder}
+                                className="font-['Plus_Jakarta_Sans'] font-medium bg-transparent border-b border-[#333333] focus:border-white outline-none pb-2 transition-colors w-full"
+                                style={{ fontSize: '18px', color: 'rgba(255, 255, 255, 0.9)' }}
+                            />
+                        )}
+                    </div>
+                  );
+              })}
           </div>
       );
   };
@@ -226,6 +320,158 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
       );
   };
 
+  // --- CALCULATIONS ---
+  const calculateProLabore = (value) => {
+    if (!value) return 0;
+    const num = parseFloat(value.toString().replace(/\D/g, '')) / 100;
+    // Rule: Cost = ProLabore + (ProLabore * 0.11)
+    return num + (num * 0.11);
+  };
+
+  const calculateCLT = (baseSalary) => {
+    if (!baseSalary) return { total: 0, breakdown: [] };
+    const salary = parseFloat(baseSalary.toString().replace(/\D/g, '')) / 100;
+    
+    // Formula items
+    const fgts = salary * 0.08;
+    const prov13 = salary / 12;
+    const provFerias = (salary * 1.3333) / 12;
+    const fgtsProv = (prov13 + provFerias) * 0.08;
+    const multa = (fgts + fgtsProv) * 0.50; // 40% employee + 10% social
+    const aviso = salary / 12;
+    
+    const total = salary + fgts + prov13 + provFerias + fgtsProv + multa + aviso;
+
+    return {
+        total,
+        breakdown: [
+            { item: '01', comp: 'Salário Base', formula: 'Valor Nominal', val: salary, desc: 'Valor bruto em contrato.' },
+            { item: '02', comp: 'FGTS Mensal', formula: 'Salário * 0.08', val: fgts, desc: 'Depósito mensal obrigatório.' },
+            { item: '03', comp: 'Provisão 13º', formula: 'Salário / 12', val: prov13, desc: 'Reserva para 13º salário.' },
+            { item: '04', comp: 'Provisão Férias', formula: '(Salário * 1.3333)/12', val: provFerias, desc: 'Férias + 1/3 constitucional.' },
+            { item: '05', comp: 'FGTS s/ Prov.', formula: '(13º + Férias) * 0.08', val: fgtsProv, desc: 'FGTS sobre provisões.' },
+            { item: '06', comp: 'Reserva Multa', formula: '(FGTS Total) * 0.50', val: multa, desc: 'Multa rescisória (40% + 10%).' },
+            { item: '07', comp: 'Aviso Prévio', formula: 'Salário / 12', val: aviso, desc: 'Provisão para indenização.' },
+        ]
+    };
+  };
+
+  const calculateDepreciation = (value, lifespan) => {
+      if(!value || !lifespan) return 0;
+      const val = parseFloat(value.toString().replace(/\D/g, '')) / 100;
+      const years = parseFloat(lifespan);
+      if(years <= 0) return 0;
+      return val / (years * 12);
+  };
+
+  // State for CLT Help Modal
+  const [showCLTHelp, setShowCLTHelp] = useState(null); // stores employee index/id or data
+
+  // Dynamic List Handler
+  const handleAddDynamicItem = (questionId) => {
+      setFormData(prev => ({
+          ...prev,
+          [questionId]: [...(prev[questionId] || []), {}]
+      }));
+  };
+
+  const handleRemoveDynamicItem = (questionId, index) => {
+      setFormData(prev => {
+          const newArr = [...(prev[questionId] || [])];
+          newArr.splice(index, 1);
+          return { ...prev, [questionId]: newArr };
+      });
+  };
+
+  const renderDynamicListCalc = (question) => {
+      const items = formData[question.id] || [{}]; // Start with 1 empty item if empty
+      
+      return (
+          <div className="flex flex-col gap-4 max-h-[500px] overflow-y-auto pr-2">
+              {items.map((item, idx) => {
+                  // Calculate Display Values based on type
+                  let costDisplay = null;
+                  let cltData = null;
+
+                  if (question.calcType === 'pro_labore') {
+                      const cost = calculateProLabore(item.pro_labore);
+                      if (cost > 0) costDisplay = `Custo Real: ${cost.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+                  } else if (question.calcType === 'clt_cost' && item.regime === 'CLT') {
+                      cltData = calculateCLT(item.base_salary);
+                      if (cltData.total > 0) costDisplay = `Custo Fantasma: ${cltData.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+                  } else if (question.calcType === 'depreciation') {
+                      const dep = calculateDepreciation(item.value, item.lifespan);
+                      if(dep > 0) costDisplay = `Depreciação Mensal: ${dep.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`;
+                  }
+
+                  return (
+                    <div key={idx} className="p-4 bg-[#2A2A2A] rounded-lg border border-[#333] relative">
+                        <div className="flex justify-between items-center mb-3">
+                            <div className="text-xs text-[#FFC100] font-bold uppercase">{question.itemLabel} {idx + 1}</div>
+                            {items.length > 1 && (
+                                <button onClick={() => handleRemoveDynamicItem(question.id, idx)} className="text-red-500 text-xs hover:underline">Remover</button>
+                            )}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            {question.fields.map(field => (
+                                <div key={field.id} className={field.id === 'name' ? 'col-span-2' : ''}>
+                                    <label className="block text-[10px] text-gray-400 mb-1 flex justify-between">
+                                        {field.label}
+                                        {field.helpText && <span className="text-white/50 cursor-pointer" title={field.helpText}>(?)</span>}
+                                    </label>
+                                    
+                                    {field.type === 'select' ? (
+                                        <select
+                                            className="w-full bg-[#1A1A1A] text-white text-sm p-2 rounded border border-[#444] outline-none"
+                                            onChange={(e) => handleGroupChange(question.id, idx, field.id, e.target.value, field.type)}
+                                            value={item[field.id] || ''}
+                                        >
+                                            <option value="">Selecione</option>
+                                            {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            value={item[field.id] || ''}
+                                            onChange={(e) => handleGroupChange(question.id, idx, field.id, e.target.value, field.type)}
+                                            placeholder={field.placeholder}
+                                            className="w-full bg-transparent border-b border-[#444] text-white text-sm pb-1 outline-none focus:border-[#FFC100]"
+                                        />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Cost Display & Helpers */}
+                        {costDisplay && (
+                            <div className="mt-3 p-2 bg-[#151515] rounded border border-[#FFC100]/30 flex items-center justify-between">
+                                <span className="text-[#FFC100] text-xs font-semibold">{costDisplay}</span>
+                                {question.calcType === 'clt_cost' && item.regime === 'CLT' && (
+                                    <button 
+                                        onClick={() => setShowCLTHelp(cltData)}
+                                        className="w-5 h-5 rounded-full bg-[#333] flex items-center justify-center text-[10px] text-white hover:bg-white hover:text-black transition-colors"
+                                        title="Ver cálculo detalahdo"
+                                    >
+                                        ?
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                  );
+              })}
+              
+              <button 
+                onClick={() => handleAddDynamicItem(question.id)}
+                className="py-3 border border-dashed border-[#444] rounded-lg text-sm text-[#888] hover:border-[#FFC100] hover:text-[#FFC100] transition-colors"
+              >
+                  + Adicionar {question.itemLabel}
+              </button>
+          </div>
+      );
+  };
+
   return (
     <AnimatePresence>
       <motion.div
@@ -236,6 +482,42 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
         className="fixed right-0 top-0 bottom-0 w-[70%] bg-[#1D1D1D] flex flex-col z-50"
         style={{ borderRadius: '15px' }}
       >
+        {/* CLT HELP MODAL OVERLAY */}
+         {showCLTHelp && (
+            <div className="absolute inset-0 z-[60] bg-black/80 flex items-center justify-center p-8 backdrop-blur-sm" onClick={() => setShowCLTHelp(null)}>
+                <div className="bg-[#1E1E1E] rounded-xl border border-[#333] max-w-[600px] w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-bold text-white">Custo Real Funcionário (CLT)</h3>
+                        <button onClick={() => setShowCLTHelp(null)} className="text-[#888] hover:text-white">✕</button>
+                    </div>
+                    
+                    <div className="border border-[#333] rounded-lg overflow-hidden">
+                        <div className="grid grid-cols-12 bg-[#2A2A2A] text-[10px] text-[#888] uppercase font-bold p-3 border-b border-[#333]">
+                            <div className="col-span-1">Item</div>
+                            <div className="col-span-3">Componente</div>
+                            <div className="col-span-3">Cálculo</div>
+                            <div className="col-span-2 text-right">Valor</div>
+                            <div className="col-span-3 pl-2">Descrição</div>
+                        </div>
+                        {showCLTHelp.breakdown.map((row) => (
+                            <div key={row.item} className="grid grid-cols-12 text-[11px] text-white p-3 border-b border-[#333] hover:bg-[#252527]">
+                                <div className="col-span-1 text-[#FFC100]">{row.item}</div>
+                                <div className="col-span-3 font-semibold">{row.comp}</div>
+                                <div className="col-span-3 text-[#888] font-mono bg-[#111] px-1 rounded w-fit">{row.formula}</div>
+                                <div className="col-span-2 text-right">{row.val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                                <div className="col-span-3 pl-2 text-[#888] text-[10px]">{row.desc}</div>
+                            </div>
+                        ))}
+                         <div className="grid grid-cols-12 bg-[#FFC100]/10 text-[12px] text-[#FFC100] font-bold p-4">
+                            <div className="col-span-7 text-right pr-4">CUSTO MENSAL EFETIVO:</div>
+                            <div className="col-span-5">{showCLTHelp.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
+
         {/* Progress Bar - Segmented */}
         <div className="absolute top-[100px] left-0 right-0 flex gap-1 px-[10%]">
           {[...Array(totalSteps)].map((_, i) => (
@@ -312,9 +594,11 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                         {/* Dynamic Input Rendering */}
                         {currentQuestion.type === 'composite' 
                             ? renderComposite(currentQuestion) 
-                            : currentQuestion.type === 'group_list'
-                                ? renderGroupList(currentQuestion)
-                                : renderSingleInput(currentQuestion)
+                            : currentQuestion.type === 'dynamic_list_calc'
+                                ? renderDynamicListCalc(currentQuestion)
+                                : currentQuestion.type === 'group_list' // Legacy fallback
+                                    ? renderGroupList(currentQuestion)
+                                    : renderSingleInput(currentQuestion)
                         }
                     </motion.div>
                 </AnimatePresence>

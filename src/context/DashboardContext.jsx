@@ -108,21 +108,35 @@ export const DashboardProvider = ({ children }) => {
     let currentMonthStr = "";
     
     // 1. Build Revenue History & Total
-    const revenueHistory = months.map(m => {
-        const key = `revenue_${m}`;
-        const rawValue = formData.revenue ? formData.revenue[key] : formData[key];
-        return parseCurrency(rawValue);
-    });
+    // Check if new array format exists from Onboarding
+    let revenueHistory = Array(12).fill(0);
+    
+    if (formData.revenue_history && Array.isArray(formData.revenue_history)) {
+        // Find the most recent valid entries, or just sum them up / map to months
+        // The new format is { month: "MM/AAAA", amount: "R$ 0,00" }
+        formData.revenue_history.forEach(entry => {
+             if (!entry.month || !entry.amount) return;
+             const val = parseCurrency(entry.amount);
+             const parts = entry.month.split('/');
+             if (parts.length === 2) {
+                 const monthIdx = parseInt(parts[0], 10) - 1; // 0-based
+                 if (monthIdx >= 0 && monthIdx <= 11) {
+                     revenueHistory[monthIdx] = val; // overwrite or add
+                 }
+             }
+        });
+    } else {
+        // Fallback to old format
+        revenueHistory = months.map(m => {
+            const key = `revenue_${m}`;
+            const rawValue = formData.revenue ? formData.revenue[key] : formData[key];
+            return parseCurrency(rawValue);
+        });
+    }
     
     const totalAnnualRevenue = revenueHistory.reduce((acc, val) => acc + val, 0);
 
     // 2. Find "Current" Revenue (Prioritize current month -> past months -> wrap around to end of year)
-    // Search Order: [Current, Current-1, ..., Jan, Dec, Dec-1, ..., Current+1]
-    // Actually, usually we just want the latest filled month up to today.
-    // If we are in Feb, we check Feb, then Jan. We shouldn't check Dec unless we want to show last year's data. 
-    // But since the form is "Last 12 Months", Dec is likely relevant.
-    // Let's search from Current Index downwards to 0, then 11 downwards to Current Index + 1.
-    
     const currentYear = new Date().getFullYear();
     const searchOrder = [
         ...Array.from({ length: currentMonthIndex + 1 }, (_, i) => currentMonthIndex - i), // Current down to 0
@@ -138,9 +152,8 @@ export const DashboardProvider = ({ children }) => {
         }
     }
     
-    // If still 0, default to first found or 0
+    // If still 0, default to first non-zero found, or 0
     if (currentRevenue === 0 && totalAnnualRevenue > 0) {
-        // Fallback: just find the first non-zero
         const firstNonZeroIdx = revenueHistory.findIndex(v => v > 0);
         if (firstNonZeroIdx !== -1) {
              currentRevenue = revenueHistory[firstNonZeroIdx];
@@ -152,56 +165,112 @@ export const DashboardProvider = ({ children }) => {
     // Fixed Costs
     let fixedCosts = 0;
     const addCost = (val) => fixedCosts += parseCurrency(val);
-    const addPeriodCost = (field) => {
-        if (!formData[field]) return;
-        let amount = parseCurrency(formData[field].amount);
-        if (formData[field].period === 'Anual') amount /= 12;
-        fixedCosts += amount;
-    };
-
-    addCost(formData.rent);
-    addCost(formData.security);
-    addPeriodCost('iptu');
-    addPeriodCost('insurance');
-    addPeriodCost('permits');
-    
-    // Composite Fixed Costs
     const sumComposite = (parentId, fields) => {
         if (!formData[parentId]) return;
         fields.forEach(f => addCost(formData[parentId][f]));
     };
-    sumComposite('utilities', ['energy', 'water', 'gas', 'internet']);
-    sumComposite('supplies', ['cleaning', 'kitchen_oil', 'maintenance']);
-    sumComposite('admin_costs', ['accounting', 'software', 'mei_das']);
-    sumComposite('marketing', ['ifood', 'agency', 'ads']); 
 
-    // Personnel Costs (Fixed)
-    let personnelCosts = 0;
-    // Partners
-    if (formData.partners && Array.isArray(formData.partners)) {
-        formData.partners.forEach(p => personnelCosts += parseCurrency(p.salary));
-    }
-    // Employees
-    if (formData.employees && Array.isArray(formData.employees)) {
-        formData.employees.forEach(e => personnelCosts += parseCurrency(e.salary));
+    // Location
+    if (formData.location_costs) {
+        addCost(formData.location_costs.rent);
+        addCost(parseCurrency(formData.location_costs.iptu_annual) / 12);
     }
     
+    // Utilities, Recurring, Operational Fixed
+    sumComposite('utilities', ['energy', 'water', 'gas', 'internet', 'security']);
+    sumComposite('recurring_services', ['pest_control', 'waste_removal', 'cleaning_supplies']);
+    sumComposite('operational_fixed', ['kitchen_gas', 'kitchen_oil']);
+    
+    // Admin Systems
+    sumComposite('admin_systems', ['software_pdv', 'accountant', 'taxes_das', 'card_machine_rent']);
+    
+    // Marketing
+    sumComposite('marketing_structure', ['agency', 'ads_budget']);
+    if (formData.marketing_structure && formData.marketing_structure.gifts_cost && formData.marketing_structure.gifts_qty) {
+        const giftCost = parseCurrency(formData.marketing_structure.gifts_cost);
+        const giftQty = parseFloat(formData.marketing_structure.gifts_qty) || 0;
+        fixedCosts += giftCost * giftQty;
+    }
+
+    // Marketplaces (Fixed Fee)
+    if (formData.fees_marketplaces && Array.isArray(formData.fees_marketplaces)) {
+        formData.fees_marketplaces.forEach(item => addCost(item.monthly_fee));
+    }
+
+    // Vehicles
+    if (formData.vehicles && Array.isArray(formData.vehicles)) {
+        formData.vehicles.forEach(v => {
+            addCost(v.installment);
+            addCost(v.maintenance_monthly);
+            addCost(parseCurrency(v.insurance_annual) / 12);
+            addCost(parseCurrency(v.ipva_annual) / 12);
+        });
+    }
+
+    // Equipment (Depreciation)
+    if (formData.equipment && Array.isArray(formData.equipment)) {
+        formData.equipment.forEach(eq => {
+            const val = parseCurrency(eq.value);
+            const years = parseFloat(eq.lifespan) || 0;
+            if (years > 0) fixedCosts += val / (years * 12);
+        });
+    }
+
+    // Personnel Costs
+    let personnelCosts = 0;
+    
+    if (formData.partners && Array.isArray(formData.partners)) {
+        formData.partners.forEach(p => {
+             const pl = parseCurrency(p.pro_labore);
+             personnelCosts += pl + (pl * 0.11);
+        });
+    }
+
+    if (formData.employees && Array.isArray(formData.employees)) {
+        formData.employees.forEach(e => {
+             const base = parseCurrency(e.base_salary);
+             if (e.regime === 'CLT') {
+                 const fgts = base * 0.08;
+                 const prov13 = base / 12;
+                 const provFerias = (base * 1.3333) / 12;
+                 const fgtsProv = (prov13 + provFerias) * 0.08;
+                 const multa = (fgts + fgtsProv) * 0.50;
+                 const aviso = base / 12;
+                 personnelCosts += base + fgts + prov13 + provFerias + fgtsProv + multa + aviso;
+             } else {
+                 personnelCosts += base;
+             }
+        });
+    }
+    
+    if (formData.benefits) {
+        const transValue = parseCurrency(formData.benefits.transport_value);
+        const transQty = parseFloat(formData.benefits.transport_qty) || 0;
+        const workDays = parseFloat(formData.benefits.work_days) || 0;
+        const foodCost = parseCurrency(formData.benefits.food_cost);
+        const empCount = formData.employees ? formData.employees.length : 1; // assume at least 1 person using
+        
+        personnelCosts += (transValue * transQty * workDays * empCount);
+        personnelCosts += (foodCost * workDays * empCount);
+    }
+
     const totalFixedCosts = fixedCosts + personnelCosts;
 
-    // Variable Costs (CMV)
-    const variableCosts = parseCurrency(formData.variable_costs);
+    // Default variable costs to 35% of Revenue for simulation if real data is missing
+    const variableCosts = currentRevenue * 0.35;
 
     // 2. METRICS CALCULATIONS
     
     const totalCosts = totalFixedCosts + variableCosts;
     const profit = currentRevenue - totalCosts;
     const contributionMargin = currentRevenue - variableCosts; // Revenue - Variable
-    const marginPercentage = currentRevenue > 0 ? (contributionMargin / currentRevenue) * 100 : 0;
+    const marginPercentage = currentRevenue > 0 ? (profit / currentRevenue) * 100 : 0;
     
     // Break Even Point (Ponto de Equilíbrio)
-    const marginDecimal = marginPercentage / 100;
-    const breakEvenValue = marginDecimal > 0 ? totalFixedCosts / marginDecimal : 0;
-    const breakEvenPercentage = currentRevenue > 0 ? (breakEvenValue / currentRevenue) * 100 : 0;
+    // BEP = Fixed Costs / Marge Contribution Percentage
+    const contributionMarginPercentage = currentRevenue > 0 ? (contributionMargin / currentRevenue) : 0;
+    const breakEvenValue = contributionMarginPercentage > 0 ? totalFixedCosts / contributionMarginPercentage : 0;
+    const breakEvenPercentage = breakEvenValue > 0 ? (currentRevenue / breakEvenValue) * 100 : 0; // Show how far along they are
 
     // 3. CONSTRUCT DASHBOARD OBJECT
     const newDashboardData = {
@@ -209,13 +278,13 @@ export const DashboardProvider = ({ children }) => {
         formData: formData, // Persist raw form data for re-editing
         operational: dashboardData.operational || initialData.operational, 
         restaurant: { 
-            name: formData?.user_info?.restaurant_name || "Seu Restaurante", 
-            category: formData.tax_regime || "Gastronomia" 
+            name: formData?.identity?.restaurant_name || "Seu Restaurante", 
+            category: formData?.identity?.cuisine_type || "Gastronomia" 
         },
         user: {
             ...initialData.user,
-            name: formData?.user_info?.user_name || "Usuário",
-            initials: (formData?.user_info?.user_name || "U").substring(0, 2).toUpperCase() 
+            name: "Usuário",
+            initials: "US"
         },
         period: {
             date: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -225,7 +294,7 @@ export const DashboardProvider = ({ children }) => {
         revenue: {
             total: formatMoney(currentRevenue),
             month: currentMonthStr || "Mês Atual",
-            history: revenueHistory, // Array of 12 numbers
+            history: revenueHistory, 
             annualTotal: formatMoney(totalAnnualRevenue),
             status: profit >= 0 ? "Positivo" : "Alerta",
             change: "0%", 
@@ -239,46 +308,51 @@ export const DashboardProvider = ({ children }) => {
                     icon: "wallet"
                 },
                 {
-                    label: "Custos Variáveis (CMV)",
+                    label: "Custos Variáveis Estimados",
                     value: `R$ ${formatMoney(variableCosts)}`,
-                    percentage: currentRevenue > 0 ? Math.round((variableCosts / currentRevenue) * 100) + "%" : "0%",
+                    percentage: "35%", // simulated
                     status: "neutral",
                     icon: "pie"
                 }
             ]
         },
         breakEven: {
-            percentage: Math.min(Math.round(breakEvenPercentage), 100),
+            // How much of the break_even have we hit? (E.g. hit 100% when revenue == breakEven)
+            percentage: breakEvenValue > 0 ? Math.min(Math.round((currentRevenue / breakEvenValue) * 100), 100) : 0, 
             current: formatMoney(breakEvenValue),
             min: "0",
-            max: formatMoney(currentRevenue * 1.5), 
+            max: formatMoney(Math.max(currentRevenue, breakEvenValue) * 1.5), 
             base: {
-                value: String(Math.round(breakEvenPercentage)),
-                status: breakEvenPercentage > 100 ? "Crítico" : (breakEvenPercentage > 80 ? "Atenção" : "Saudável"),
-                range: "0 a 70"
+                value: marginPercentage.toFixed(0),
+                status: marginPercentage < 10 ? "Alerta" : (marginPercentage > 20 ? "Saudável" : "Médio"),
+                range: "Acima de 15% ideal"
             }
         },
         cards: {
             moneyOnTable: {
+                // Dinheiro na mesa is defined here as what they *could* be making if they hit ideal costs vs what they *are* making
+                // Let's assume ideal margin is 20%. 
+                idealMargin: 20,
+                currentMargin: marginPercentage,
                 total: formatMoney(currentRevenue),
-                lost: formatMoney(Math.abs(Math.min(profit, 0))), 
-                recovered: formatMoney(Math.max(profit, 0)),      
-                percentage: marginPercentage.toFixed(0) + "%"
+                lost: marginPercentage < 20 && currentRevenue > 0 ? formatMoney((0.20 - (profit/currentRevenue)) * currentRevenue) : "0,00",
+                recovered: profit > 0 ? formatMoney(profit) : "0,00",
+                percentage: marginPercentage < 20 && currentRevenue > 0 ? Math.round(((0.20 - (profit/currentRevenue)) / 0.20) * 100) + "%" : "0%"
             },
             technicalSheets: [
-                { label: 'CMV Teórico', value: Math.round((variableCosts/currentRevenue)*100) + '%' }, 
+                { label: 'CMV Teórico', value: '35%' }, 
                 { label: 'Fichas Desatualizadas', value: '0' },
                 { label: 'Produtos Sem Ficha', value: '0' },
-                { label: 'CMV real', value: Math.round((variableCosts/currentRevenue)*100) + '%' }
+                { label: 'CMV real', value: '35%' }
             ],
             costStructure: {
                 total: formatMoney(totalCosts),
                 percentage: currentRevenue > 0 ? Math.round((totalCosts / currentRevenue) * 100) + "%" : "0%",
                 breakdown: [
                     { label: 'Pessoal + Sócios', value: `R$ ${formatMoney(personnelCosts)}` },
-                    { label: 'Infraestrutura', value: `R$ ${formatMoney(fixedCosts - parseCurrency(formData?.admin_costs?.accounting || 0))}` }, 
-                    { label: 'CMV (Insumos)', value: `R$ ${formatMoney(variableCosts)}` },
-                    { label: 'Admin e Mkt', value: `R$ ${formatMoney(parseCurrency(formData?.admin_costs?.accounting || 0) + parseCurrency(formData?.marketing?.agency || 0))}` }, 
+                    { label: 'Infraestrutura', value: `R$ ${formatMoney(fixedCosts - parseCurrency(formData?.admin_systems?.accountant || 0) - parseCurrency(formData?.marketing_structure?.agency || 0))}` }, 
+                    { label: 'CMV Estimado', value: `R$ ${formatMoney(variableCosts)}` },
+                    { label: 'Admin e Mkt', value: `R$ ${formatMoney(parseCurrency(formData?.admin_systems?.accountant || 0) + parseCurrency(formData?.marketing_structure?.agency || 0))}` }, 
                 ]
             }
         },

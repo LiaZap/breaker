@@ -1,193 +1,245 @@
 export const onboardingQuestions = [
-  // --- SECTION 0: SOBRE VOCÊ ---
+  // ==================================================================================
+  // FASE 1: Identidade e Equipe
+  // ==================================================================================
+  
+  // Etapa 01: Identidade do Negócio (Opcional)
   {
-    id: 'user_info',
-    section: 'Sobre Você',
-    title: 'Boas-vindas!',
-    description: 'Para começarmos, como você e seu negócio se chamam?',
+    id: 'identity',
+    section: 'Identidade e Equipe',
+    title: 'Identidade do Negócio',
+    description: 'Vamos começar com o básico do seu estabelecimento.',
     type: 'composite',
     fields: [
-      { id: 'user_name', label: 'Seu Nome', type: 'text', placeholder: 'Ex: Marcelo Silveratto' },
-      { id: 'restaurant_name', label: 'Nome do Restaurante', type: 'text', placeholder: 'Ex: Terra e Mar 360' }
+      { id: 'restaurant_name', label: 'Nome do Restaurante', type: 'text', placeholder: 'Ex: Terra e Mar 360' },
+      { id: 'cuisine_type', label: 'Tipo de Culinária', type: 'autocomplete', placeholder: 'Ex: Italiana, Japonesa...', options: ['Italiana', 'Japonesa', 'Brasileira', 'Contemporânea', 'Fast Food', 'Pizzaria', 'Hamburgueria', 'Asiática', 'Árabe', 'Mexicana', 'Vegetariana/Vegana', 'Cafeteria', 'Doceria/Confeitaria', 'Padaria', 'Bar/Pub', 'Steakhouse/Churrascaria', 'Frutos do Mar', 'Bistrô', 'Buffet', 'Outros'] },
+      { id: 'tax_regime', label: 'Regime Tributário', type: 'select', options: ['Simples Nacional', 'Lucro Presumido', 'Lucro Real'] },
+      // Logic for MEI will be handled in form if Simples is selected
+      { id: 'is_mei', label: 'É MEI?', type: 'select', options: ['Não', 'Sim'], hidden: true, dependsOn: 'tax_regime', dependsValue: 'Simples Nacional' } 
     ]
   },
 
-  // --- SECTION 1: FATURAMENTO (12 Months) ---
-  {
-    id: 'revenue',
-    section: 'Faturamento',
-    title: 'Histórico de Faturamento',
-    description: 'Informe o faturamento mensal dos últimos 12 meses.',
-    type: 'composite',
-    gridLayout: true,
-    fields: [
-      { id: 'revenue_jan', label: 'Janeiro', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'revenue_feb', label: 'Fevereiro', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'revenue_mar', label: 'Março', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'revenue_apr', label: 'Abril', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'revenue_may', label: 'Maio', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'revenue_jun', label: 'Junho', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'revenue_jul', label: 'Julho', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'revenue_aug', label: 'Agosto', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'revenue_sep', label: 'Setembro', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'revenue_oct', label: 'Outubro', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'revenue_nov', label: 'Novembro', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'revenue_dec', label: 'Dezembro', type: 'currency', placeholder: 'R$ 0,00' }
-    ]
-  },
-
-  // --- SECTION 2: INFO GERAIS ---
-  {
-    id: 'tax_regime',
-    section: 'Informações Gerais',
-    title: 'Qual o Regime Tributário?',
-    description: 'Ex: Simples Nacional, Lucro Presumido, MEI...',
-    type: 'text',
-    placeholder: 'Simples Nacional'
-  },
-  {
-    id: 'card_fees',
-    section: 'Taxas',
-    title: 'Taxas da Maquininha',
-    description: 'Informe as taxas médias para Débito e Crédito.',
-    type: 'composite',
-    fields: [
-      { id: 'debit', label: 'Débito (%)', type: 'percentage', placeholder: '1.2%' },
-      { id: 'credit', label: 'Crédito (%)', type: 'percentage', placeholder: '3.5%' }
-    ]
-  },
-
-  // --- SECTION 3: CUSTOS FIXOS (INFRAESTRUTURA) ---
-  {
-    id: 'rent',
-    section: 'Custos Fixos',
-    title: 'Aluguel',
-    description: 'Valor mensal do aluguel do imóvel.',
-    type: 'currency',
-    placeholder: 'R$ 0,00'
-  },
-  {
-    id: 'iptu',
-    section: 'Custos Fixos',
-    title: 'IPTU',
-    description: 'Valor do IPTU (Mensal ou Total Anual).',
-    type: 'currency_period', // Special type for Value + Select
-    placeholder: 'R$ 0,00'
-  },
-  {
-    id: 'insurance',
-    section: 'Custos Fixos',
-    title: 'Seguro do Imóvel',
-    description: 'Valor do seguro (Mensal ou Total Anual).',
-    type: 'currency_period',
-    placeholder: 'R$ 0,00'
-  },
-  {
-    id: 'security',
-    section: 'Custos Fixos',
-    title: 'Segurança / Vigia',
-    description: 'Custo mensal com segurança.',
-    type: 'currency',
-    placeholder: 'R$ 0,00'
-  },
-  {
-    id: 'permits',
-    section: 'Custos Fixos',
-    title: 'Alvarás e Licenças',
-    description: 'Custo com alvarás.',
-    type: 'currency_period',
-    placeholder: 'R$ 0,00'
-  },
-  {
-    id: 'utilities',
-    section: 'Custos Fixos',
-    title: 'Utilidades Básicas',
-    description: 'Coloque uma média mensal para estes item.',
-    type: 'composite',
-    fields: [
-        { id: 'energy', label: 'Energia Elétrica', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'water', label: 'Água / Esgoto', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'gas', label: 'Gás', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'internet', label: 'Internet', type: 'currency', placeholder: 'R$ 0,00' },
-    ]
-  },
-  {
-    id: 'supplies',
-    section: 'Custos Fixos',
-    title: 'Insumos Operacionais',
-    description: 'Média mensal de gastos com limpeza e manutenção.',
-    type: 'composite',
-    fields: [
-        { id: 'cleaning', label: 'Material de Limpeza', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'kitchen_oil', label: 'Óleo de Cozinha', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'maintenance', label: 'Manutenção Geral', type: 'currency', placeholder: 'R$ 0,00' },
-    ]
-  },
-
-  // --- SECTION 4: PESSOAL ---
+  // Etapa 02: Sócios e Gestão (Pró-Labore)
   {
     id: 'partners',
-    section: 'Sócios',
-    title: 'Sócios e Pró-Labore',
-    description: 'Informe os dados dos sócios (até 3).',
-    type: 'group_list',
-    maxItems: 3,
+    section: 'Identidade e Equipe',
+    title: 'Sócios e Gestão',
+    description: 'Cadastre os sócios e seus Pró-Labores (valor fiscal para custo fixo).',
+    type: 'dynamic_list_calc', // Special type for list with internal calculation
     itemLabel: 'Sócio',
+    calcType: 'pro_labore', // Trigger pro-labore logic
     fields: [
-        { id: 'name', label: 'Nome', type: 'text', placeholder: 'Nome do Sócio' },
-        { id: 'role', label: 'Cargo', type: 'text', placeholder: 'Diretor...' },
-        { id: 'salary', label: 'Pró-Labore', type: 'currency', placeholder: 'R$ 0,00' }
+      { id: 'name', label: 'Nome', type: 'text', placeholder: 'Nome do Sócio' },
+      { id: 'role', label: 'Cargo', type: 'text', placeholder: 'Ex: Diretor' },
+      { id: 'pro_labore', label: 'Pró-Labore (R$)', type: 'currency', placeholder: 'R$ 0,00', helpText: 'Valor fiscal retirado, não o lucro.' }
     ]
   },
+
+  // Etapa 03: Funcionários (Salários e Encargos Reais)
   {
     id: 'employees',
-    section: 'Equipe',
+    section: 'Identidade e Equipe',
     title: 'Funcionários',
-    description: 'Informe os dados dos principais funcionários (Cozinha, Salão, etc).',
-    type: 'group_list',
-    maxItems: 5, 
+    description: 'Cadastre sua equipe. O sistema calculará automaticamente o "Custo Fantasma" para CLT.',
+    type: 'dynamic_list_calc',
     itemLabel: 'Funcionário',
+    calcType: 'clt_cost', // Trigger CLT logic
     fields: [
-        { id: 'name', label: 'Nome', type: 'text', placeholder: 'Nome' },
-        { id: 'role', label: 'Cargo', type: 'text', placeholder: 'Cozinheiro...' },
-        { id: 'salary', label: 'Salário', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'regime', label: 'Regime', type: 'select', options: ['CLT', 'Freelancer', 'PJ'] }
+      { id: 'name', label: 'Nome', type: 'text', placeholder: 'Nome' },
+      { id: 'role', label: 'Cargo', type: 'text', placeholder: 'Ex: Cozinheiro' },
+      { id: 'base_salary', label: 'Salário Base (R$)', type: 'currency', placeholder: 'R$ 0,00' },
+      { id: 'regime', label: 'Regime', type: 'select', options: ['CLT', 'Freelancer', 'PJ'] }
     ]
   },
 
-  // --- SECTION 5: ADMIN & MARKETING ---
+  // Etapa 04: Benefícios e Alimentação (Opcional)
   {
-    id: 'admin_costs',
-    section: 'Administrativo',
-    title: 'Custos Administrativos',
-    description: 'Serviços e taxas mensais.',
+    id: 'benefits',
+    section: 'Identidade e Equipe',
+    title: 'Benefícios e Alimentação',
+    description: 'Custos invisíveis com transporte e refeição da equipe.',
     type: 'composite',
     fields: [
-        { id: 'accounting', label: 'Contabilidade', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'software', label: 'Sistemas (PDV)', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'mei_das', label: 'Impostos (DAS/MEI)', type: 'currency', placeholder: 'R$ 0,00' }
-    ]
-  },
-  {
-    id: 'marketing',
-    section: 'Marketing',
-    title: 'Marketing e Vendas',
-    description: 'Investimento em aquisição de clientes.',
-    type: 'composite',
-    fields: [
-        { id: 'ifood', label: 'iFood (Mensalidade)', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'ads', label: 'Tráfego Pago', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'agency', label: 'Agência', type: 'currency', placeholder: 'R$ 0,00' }
+      { id: 'transport_value', label: 'Valor da Passagem (R$)', type: 'currency', placeholder: 'R$ 0,00' },
+      { id: 'transport_qty', label: 'Qtd Passagens/Dia', type: 'number', placeholder: 'Ex: 2' },
+      { id: 'work_days', label: 'Dias Trabalhados/Mês', type: 'number', placeholder: 'Ex: 22' },
+      { id: 'food_cost', label: 'Custo Refeição/Dia (R$)', type: 'currency', placeholder: 'R$ 0,00' }
     ]
   },
 
-  // --- SECTION 6: VARIÁVEIS ---
+  // ==================================================================================
+  // FASE 2: Infraestrutura
+  // ==================================================================================
+
+  // Etapa 05: Aluguel e IPTU
   {
-    id: 'variable_costs',
-    section: 'Custos Variáveis',
-    title: 'Média de Compras (CMV)',
-    description: 'Média mensal gasta com alimentos, bebidas e embalagens (soma dos ultimos 3 meses / 3).',
-    type: 'currency',
-    placeholder: 'R$ 0,00'
+    id: 'location_costs',
+    section: 'Infraestrutura',
+    title: 'Imóvel',
+    description: 'Custos com o ponto comercial.',
+    type: 'composite',
+    fields: [
+      { id: 'rent', label: 'Valor do Aluguel (Mensal)', type: 'currency', placeholder: 'R$ 0,00' },
+      { id: 'iptu_annual', label: 'Valor IPTU (ANUAL)', type: 'currency', placeholder: 'R$ 0,00' }
+    ]
+  },
+
+  // Etapa 06: Utilidades Básicas
+  {
+    id: 'utilities',
+    section: 'Infraestrutura',
+    title: 'Utilidades Básicas',
+    description: 'Custos mensais de operação.',
+    type: 'composite',
+    fields: [
+      { id: 'energy', label: 'Energia Elétrica', type: 'currency', placeholder: 'R$ 0,00' },
+      { id: 'water', label: 'Água / Esgoto', type: 'currency', placeholder: 'R$ 0,00' },
+      { id: 'gas', label: 'Gás Encanado', type: 'currency', placeholder: 'R$ 0,00' },
+      { id: 'internet', label: 'Internet / Telefone', type: 'currency', placeholder: 'R$ 0,00' },
+      { id: 'security', label: 'Segurança / Alarme', type: 'currency', placeholder: 'R$ 0,00' }
+    ]
+  },
+
+  // Etapa 07: Serviços Recorrentes (Opcional)
+  {
+    id: 'recurring_services',
+    section: 'Infraestrutura',
+    title: 'Serviços Recorrentes',
+    description: 'Outros custos de manutenção.',
+    type: 'composite',
+    fields: [
+      { id: 'pest_control', label: 'Dedetização', type: 'currency', placeholder: 'R$ 0,00' },
+      { id: 'waste_removal', label: 'Lixo Especial', type: 'currency', placeholder: 'R$ 0,00' },
+      { id: 'cleaning_supplies', label: 'Material de Limpeza', type: 'currency', placeholder: 'R$ 0,00' }
+    ]
+  },
+
+  // Etapa 08: Gás e Óleo (Operacional Fixo)
+  {
+    id: 'operational_fixed',
+    section: 'Infraestrutura',
+    title: 'Custos Operacionais Fixos',
+    description: 'Gás de cozinha e Óleo. Recomendamos considerar fixo para simplificação.',
+    type: 'composite',
+    fields: [
+      { id: 'kitchen_gas', label: 'Gás de Cozinha (Média)', type: 'currency', placeholder: 'R$ 0,00' },
+      { id: 'kitchen_oil', label: 'Óleo / Gordura (Média)', type: 'currency', placeholder: 'R$ 0,00' }
+    ]
+  },
+
+  // ==================================================================================
+  // FASE 3: Ativos e Inteligência
+  // ==================================================================================
+
+  // Etapa 09: Inventário e Depreciação
+  {
+    id: 'equipment',
+    section: 'Ativos e Inteligência',
+    title: 'Equipamentos (Depreciação)',
+    description: 'Liste grandes equipamentos para calcular a depreciação mensal.',
+    type: 'dynamic_list_calc',
+    itemLabel: 'Equipamento',
+    calcType: 'depreciation',
+    fields: [
+        { id: 'name', label: 'Equipamento', type: 'text', placeholder: 'Ex: Forno Combinado' },
+        { id: 'value', label: 'Valor Pago', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'lifespan', label: 'Vida Útil (Anos)', type: 'number', placeholder: 'Ex: 10' }
+    ]
+  },
+
+  // Etapa 10: Inteligência e Administrativo
+  {
+    id: 'admin_systems',
+    section: 'Ativos e Inteligência',
+    title: 'Sistemas e Adm.',
+    description: 'Softwares e serviços administrativos.',
+    type: 'composite',
+    fields: [
+        { id: 'software_pdv', label: 'Software PDV', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'accountant', label: 'Contador', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'taxes_das', label: 'Imposto Fixo (MEI/DAS)', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'card_machine_rent', label: 'Aluguel Maquininha', type: 'currency', placeholder: 'R$ 0,00' }
+    ]
+  },
+
+  // Etapa 11: Veículos (Opcional)
+  {
+    id: 'vehicles',
+    section: 'Ativos e Inteligência',
+    title: 'Veículos da Operação',
+    description: 'Custos com veículos da empresa.',
+    type: 'dynamic_list_calc',
+    itemLabel: 'Veículo',
+    calcType: 'vehicle_cost',
+    fields: [
+        { id: 'name', label: 'Veículo', type: 'text', placeholder: 'Ex: Fiorino' },
+        { id: 'installment', label: 'Parcela/Financ.', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'insurance_annual', label: 'Seguro (Anual)', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'ipva_annual', label: 'IPVA (Anual)', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'maintenance_monthly', label: 'Combustível/Manut.', type: 'currency', placeholder: 'R$ 0,00' }
+    ]
+  },
+
+  // ==================================================================================
+  // FASE 4: Marketing e Vendas
+  // ==================================================================================
+
+  // Etapa 12: Marketing
+  {
+    id: 'marketing_structure',
+    section: 'Marketing e Vendas',
+    title: 'Estrutura de Marketing',
+    description: 'Investimento fixo mensal.',
+    type: 'composite',
+    fields: [
+        { id: 'agency', label: 'Agência / Freelancer', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'ads_budget', label: 'Verba Tráfego Pago', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'gifts_cost', label: 'Custo Brindes (Unit)', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'gifts_qty', label: 'Qtd Brindes/Mês', type: 'number', placeholder: 'Ex: 50' }
+    ]
+  },
+
+  // Etapa 13: Taxas (Marketplace e Cartão)
+  {
+    id: 'fees_marketplaces',
+    section: 'Marketing e Vendas',
+    title: 'Marketplaces (Delivery)',
+    description: 'Cadastre seus canais de venda.',
+    type: 'dynamic_list_calc',
+    itemLabel: 'Canal',
+    calcType: 'none',
+    fields: [
+        { id: 'provider', label: 'Plataforma', type: 'select', options: ['iFood', 'Rappi', 'Delivery Much', 'App Próprio', 'Outro'] },
+        { id: 'monthly_fee', label: 'Mensalidade Fixa', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'commission', label: '% Comissão', type: 'percentage', placeholder: 'Ex: 12%' }
+    ]
+  },
+  {
+    id: 'fees_cards',
+    section: 'Marketing e Vendas',
+    title: 'Taxas de Cartão',
+    description: 'Cadastre suas maquininhas.',
+    type: 'dynamic_list_calc',
+    itemLabel: 'Operadora',
+    calcType: 'none',
+    fields: [
+        { id: 'provider', label: 'Operadora', type: 'select', options: ['PagSeguro', 'Stone', 'Cielo', 'Rede', 'Getnet', 'Outra'] },
+        { id: 'debit_rate', label: 'Taxa Débito (%)', type: 'percentage', placeholder: '1.99%' },
+        { id: 'credit_rate', label: 'Taxa Crédito (%)', type: 'percentage', placeholder: '3.49%' }
+    ]
+  },
+
+  // Etapa 14: Faturamento
+  {
+    id: 'revenue_history',
+    section: 'Marketing e Vendas',
+    title: 'Histórico de Faturamento',
+    description: 'Faturamento bruto dos últimos meses disponível.',
+    type: 'dynamic_list_calc',
+    itemLabel: 'Mês',
+    fields: [
+        { id: 'month', label: 'Mês/Ano', type: 'text', placeholder: 'MM/AAAA' },
+        { id: 'amount', label: 'Faturamento', type: 'currency', placeholder: 'R$ 0,00' }
+    ]
   }
 ];

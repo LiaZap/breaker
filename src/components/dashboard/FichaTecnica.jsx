@@ -118,27 +118,41 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
   
   // Safe parsing for creation vs edit
   const safeRendimento = insumo.rendimento || '0gr';
-  const qty = safeRendimento.replace(/[^0-9]/g, '');
-  const unitMatch = safeRendimento.replace(/[0-9]/g, '');
+  const qty = safeRendimento.replace(/[^0-9.,]/g, '');
+  const unitMatch = safeRendimento.replace(/[0-9.,]/g, '') || 'gr';
   
-  const [rendimentoQty, setRendimentoQty] = useState(qty || '');
-  const [rendimentoUnit, setRendimentoUnit] = useState(unitMatch || 'gr');
+  const [pesoBrutoQty, setPesoBrutoQty] = useState(insumo.pesoBruto || qty || '');
+  const [pesoLiquidoQty, setPesoLiquidoQty] = useState(insumo.pesoLiquido || qty || '');
+  const [unit, setUnit] = useState(insumo.unit || unitMatch || 'gr');
   
   const safeCusto = insumo.custo || '0,00';
-  const [custo, setCusto] = useState(safeCusto.replace('R$ ', '').replace('R$', '').trim());
+  const [custo, setCusto] = useState(safeCusto.replace(/R\$\s?/g, '').trim());
 
   const { dashboardData } = useDashboard();
-  const categoryOptions = dashboardData.operational?.categories?.insumos || ['Proteínas', 'Grãos', 'Molhos', 'Legumes', 'Temperos', 'Óleos', 'Laticínios', 'Outros'];
+  const categoryOptions = dashboardData.operational?.categories?.insumos || ['Proteínas', 'Grãos', 'Vinhos', 'Molhos', 'Legumes', 'Temperos', 'Óleos', 'Laticínios', 'Outros'];
+
+  // Calculations
+  const parseNum = (val) => parseFloat(String(val).replace(',', '.')) || 0;
+  const pb = parseNum(pesoBrutoQty);
+  const pl = parseNum(pesoLiquidoQty);
+  
+  const fc = pl > 0 && typeof pb === 'number' ? (pb / pl).toFixed(2) : '1.00';
+  const rendimentoPerc = pb > 0 ? Math.round((pl / pb) * 100) : 100;
 
   const handleSave = () => {
     if (!nome.trim()) return;
     onSave({
       ...insumo,
-      id: insumo.id || Date.now().toString(), // Generate ID if new
+      id: insumo.id || Date.now().toString(),
       name: nome,
       category: categoria,
-      rendimento: `${rendimentoQty}${rendimentoUnit}`,
+      pesoBruto: pesoBrutoQty,
+      pesoLiquido: pesoLiquidoQty,
+      unit: unit,
+      fc: fc,
+      rendimento: `${pesoLiquidoQty}${unit}`, // Display the resulting usable amount
       custo: `R$ ${custo}`,
+      defaultQty: pesoLiquidoQty, // Ensure it meshes gracefully with Ficha Tecnica
     });
     onClose();
   };
@@ -183,7 +197,7 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[12px] px-4 py-3.5 text-[14px] text-white outline-none focus:border-[#F5A623] transition-colors"
-              placeholder="Ex: Arroz Branco"
+              placeholder="Ex: Peito de Frango"
             />
           </div>
 
@@ -206,32 +220,28 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
             </div>
           </div>
 
-          {/* Rendimento + Custo */}
+          {/* Unit + Custo */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[12px] text-[#868686] mb-2">Rendimento</label>
-              <div className="flex items-center bg-[#252527] border border-[#2A2A2C] rounded-[12px] overflow-hidden focus-within:border-[#F5A623] transition-colors">
-                <input
-                  type="text"
-                  value={rendimentoQty}
-                  onChange={(e) => setRendimentoQty(e.target.value)}
-                  className="w-full bg-transparent px-4 py-3.5 text-[14px] text-white outline-none"
-                  placeholder="0"
-                />
+              <label className="block text-[12px] text-[#868686] mb-2">Unidade</label>
+              <div className="relative bg-[#252527] border border-[#2A2A2C] rounded-[12px] overflow-hidden focus-within:border-[#F5A623] transition-colors">
                 <select
-                  value={rendimentoUnit}
-                  onChange={(e) => setRendimentoUnit(e.target.value)}
-                  className="bg-transparent text-[13px] text-[#868686] pr-3 outline-none appearance-none cursor-pointer"
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value)}
+                  className="w-full bg-transparent px-4 py-3.5 text-[14px] text-white outline-none appearance-none cursor-pointer"
                 >
-                  <option value="gr">gr</option>
-                  <option value="ml">ml</option>
-                  <option value="un">un</option>
-                  <option value="kg">kg</option>
+                  <option value="gr">Gramas (gr)</option>
+                  <option value="ml">Mililitros (ml)</option>
+                  <option value="un">Unidade (un)</option>
+                  <option value="kg">Quilogramas (kg)</option>
                 </select>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                   <path d="M6 9L12 15L18 9" stroke="#868686" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </div>
             </div>
             <div>
-              <label className="block text-[12px] text-[#868686] mb-2">Custo</label>
+              <label className="block text-[12px] text-[#868686] mb-2">Custo de Compra</label>
               <div className="flex items-center bg-[#252527] border border-[#2A2A2C] rounded-[12px] overflow-hidden focus-within:border-[#F5A623] transition-colors">
                 <span className="text-[13px] text-[#868686] pl-4 shrink-0">R$</span>
                 <input
@@ -244,6 +254,43 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
               </div>
             </div>
           </div>
+
+          {/* Rendimento (PB and PL) */}
+          <div className="bg-[#252527] rounded-[12px] p-4 border border-[#2A2A2C]">
+            <div className="flex justify-between items-center mb-4">
+              <label className="text-[13px] font-semibold text-white">Cálculo de Correção</label>
+              <div className="text-[11px] bg-[#1E1E1E] px-2.5 py-1 rounded-[6px] text-[#868686]">FC: <span className="text-[#F5A623] font-bold">{fc}</span> | Rend: <span className="text-[#00B37E] font-bold">{rendimentoPerc}%</span></div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] text-[#868686] mb-1">Qtd Bruta (Comprada)</label>
+                <div className="flex items-center border-b border-[#3A3A3C] pb-1 focus-within:border-[#F5A623] transition-colors">
+                  <input
+                    type="text"
+                    value={pesoBrutoQty}
+                    onChange={(e) => setPesoBrutoQty(e.target.value)}
+                    className="w-full bg-transparent text-[14px] text-white outline-none"
+                    placeholder="Ex: 1000"
+                  />
+                  <span className="text-[11px] text-[#868686] pl-2">{unit}</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] text-[#868686] mb-1">Qtd Líquida/Útil (Receita)</label>
+                <div className="flex items-center border-b border-[#3A3A3C] pb-1 focus-within:border-[#F5A623] transition-colors">
+                  <input
+                    type="text"
+                    value={pesoLiquidoQty}
+                    onChange={(e) => setPesoLiquidoQty(e.target.value)}
+                    className="w-full bg-transparent text-[14px] text-white outline-none"
+                    placeholder="Ex: 800"
+                  />
+                  <span className="text-[11px] text-[#868686] pl-2">{unit}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
         </div>
 
         {/* Footer */}
@@ -278,59 +325,79 @@ const availableInsumosPool = [
   { id: 'a12', name: 'Queijo Parmesão', category: 'Laticínios', defaultQty: '30', unit: 'gr', price: '5,20' },
 ];
 
+// ... (imports)
+import FichaTecnicaPrint from './FichaTecnicaPrint';
+
 // ============ MODAL: Criar/Editar Ficha Técnica ============
 const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => {
   const isEditing = !!editingFicha;
-  const [nome, setNome] = useState(editingFicha ? editingFicha.name : '');
   const { dashboardData } = useDashboard();
+  
+  // State
+  const [activeTab, setActiveTab] = useState('custos'); // 'custos' or 'operacional'
+  const [nome, setNome] = useState(editingFicha ? editingFicha.name : '');
+  
   const fichaCategoryOptions = dashboardData.operational?.categories?.fichas || ['Prato Principal', 'Entrada', 'Sobremesa', 'Bebida', 'Acompanhamento', 'Insumo Preparado'];
   const insumoCategoryOptions = dashboardData.operational?.categories?.insumos || ['Proteínas', 'Grãos', 'Vinhos', 'Molhos', 'Legumes', 'Temperos', 'Óleos', 'Laticínios', 'Outros'];
-  
-  // Use real insumos from Context
   const availableInsumos = dashboardData.operational?.insumos || [];
 
   const [categoria, setCategoria] = useState(editingFicha ? editingFicha.type : fichaCategoryOptions[0]);
   const [rendimento, setRendimento] = useState(editingFicha ? editingFicha.rendimento.replace(/[^0-9]/g, '') : '200');
   const [custoEmbalagem, setCustoEmbalagem] = useState(editingFicha ? editingFicha.custoEmbalagem.replace('R$', '') : '');
+  
+  // Operational Fields
+  const [tempoPreparo, setTempoPreparo] = useState(editingFicha?.tempoPreparo || '');
+  const [utensilios, setUtensilios] = useState(editingFicha?.utensilios || '');
+  const [fotoPrato, setFotoPrato] = useState(editingFicha?.fotoPrato || null); 
+  const [modoPreparo, setModoPreparo] = useState(editingFicha?.modoPreparo || ['']); 
+  const [finalizacao, setFinalizacao] = useState(editingFicha?.finalizacao || '');
+
+  // Insumos State
   const [searchInsumo, setSearchInsumo] = useState('');
   const [addedInsumos, setAddedInsumos] = useState(() => {
     if (editingFicha && editingFicha.insumos > 0) {
-      // Logic to restore added insumos would need storing them in Ficha object detailedly.
-      // For now, if we don't store the detailed list in Ficha, we can't fully restore it.
-      // Assuming Ficha object structure might need update, but for now let's fix the SEARCH.
-      // If editingFicha has a list of 'ingredients' (not just count), we use it.
       return editingFicha.ingredients || [];
     }
     return [];
   });
   const [showNewInsumoForm, setShowNewInsumoForm] = useState(false);
-  const [newInsumo, setNewInsumo] = useState({ name: '', category: insumoCategoryOptions[0], qty: '200', unit: 'gr', price: '' });
+  const [newInsumo, setNewInsumo] = useState({ name: '', category: insumoCategoryOptions[0], qty: '200', grossQty: '', unit: 'gr', price: '' });
 
+  // Handlers
   const handleSave = () => {
-    if (!nome.trim()) return;
+    if (!nome.trim()) {
+        alert("Preencha o nome da ficha.");
+        return;
+    }
     const custoTotalInsumos = addedInsumos.reduce((sum, i) => {
+      // Price is now Total Cost of PB
       const price = parseFloat(String(i.price).replace('R$','').replace(',', '.')) || 0;
       return sum + price;
     }, 0);
     const custoEmb = parseFloat(custoEmbalagem.replace(',', '.')) || 0;
-    // Create new ficha object
+    
     const fichaData = {
       id: editingFicha ? editingFicha.id : Date.now().toString(),
       name: nome,
       type: categoria,
-      progress: editingFicha ? editingFicha.progress : 0, // Default progress
+      progress: editingFicha ? editingFicha.progress : 0, 
       insumos: addedInsumos.length,
-      ingredients: addedInsumos, // Store detailed ingredients
+      ingredients: addedInsumos, 
       custoInsumos: `R$${custoTotalInsumos.toFixed(2).replace('.', ',')}`,
       custoEmbalagem: `R$${custoEmb.toFixed(2).replace('.', ',')}`,
-      rendimento: `${rendimento}gr`, // Assuming grams for now
-      custoTotal: `R$ ${(custoTotalInsumos + custoEmb).toFixed(2).replace('.', ',')}`
+      rendimento: `${rendimento}gr`,
+      custoTotal: `R$ ${(custoTotalInsumos + custoEmb).toFixed(2).replace('.', ',')}`,
+      
+      tempoPreparo,
+      utensilios,
+      fotoPrato,
+      modoPreparo: modoPreparo.filter(s => s.trim() !== ''),
+      finalizacao
     };
     onSave(fichaData, isEditing);
     onClose();
   };
 
-  // Filter available insumos based on search and exclude already added
   const addedIds = new Set(addedInsumos.map(i => i.id));
   const filteredInsumos = availableInsumos.filter(i =>
     !addedIds.has(i.id) &&
@@ -338,7 +405,14 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
   );
 
   const handleAddInsumo = (insumo) => {
-    setAddedInsumos(prev => [...prev, { ...insumo, qty: insumo.defaultQty }]);
+    // When adding existing insumo, assume PB=PL and FC=1 for now unless defined
+    setAddedInsumos(prev => [...prev, { 
+        ...insumo, 
+        qty: insumo.defaultQty,
+        netQty: insumo.defaultQty,
+        grossQty: insumo.defaultQty,
+        fc: '1.00'
+    }]);
   };
 
   const handleRemoveInsumo = (id) => {
@@ -347,311 +421,430 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
 
   const handleCreateNewInsumo = () => {
     if (!newInsumo.name.trim() || !newInsumo.price.trim()) return;
+    
+    // Parse values
+    const netQty = parseFloat(newInsumo.qty.replace(',', '.')) || 0;
+    const grossQty = parseFloat(newInsumo.grossQty?.replace(',', '.') || newInsumo.qty.replace(',', '.')) || netQty;
+    const unitPrice = parseFloat(newInsumo.price.replace('R$', '').replace(',', '.')) || 0;
+    
+    // Calculate FC
+    const fc = netQty > 0 ? (grossQty / netQty).toFixed(2) : '1.00';
+
     const created = {
       id: `new_${Date.now()}`,
       name: newInsumo.name,
       category: newInsumo.category,
       defaultQty: newInsumo.qty,
-      qty: newInsumo.qty,
+      
+      // Store metrics
+      qty: newInsumo.qty, 
+      netQty: newInsumo.qty,
+      grossQty: grossQty.toString().replace('.', ','),
+      fc: fc,
+      
       unit: newInsumo.unit,
-      price: newInsumo.price,
+      price: unitPrice.toFixed(2).replace('.', ','),
     };
+    
     setAddedInsumos(prev => [...prev, created]);
-    setNewInsumo({ name: '', category: insumoCategoryOptions[0], qty: '200', unit: 'gr', price: '' });
+    setNewInsumo({ name: '', category: insumoCategoryOptions[0], qty: '200', grossQty: '', unit: 'gr', price: '' });
     setShowNewInsumoForm(false);
+  };
+
+  const updateStep = (index, value) => {
+      const newSteps = [...modoPreparo];
+      newSteps[index] = value;
+      setModoPreparo(newSteps);
+  };
+  const addStep = () => setModoPreparo([...modoPreparo, '']);
+  const removeStep = (index) => setModoPreparo(modoPreparo.filter((_, i) => i !== index));
+  
+  // Construct data for print
+  const getPrintData = () => {
+     return {
+        name: nome,
+        type: categoria,
+        rendimento: `${rendimento}gr`, // Append unit as in render
+        utensilios,
+        tempoPreparo,
+        fotoPrato,
+        ingredients: addedInsumos,
+        modoPreparo,
+        finalizacao
+     };
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Print Component (Hidden unless printing) */}
+      <FichaTecnicaPrint data={getPrintData()} />
+
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative w-[90vw] max-w-[900px] h-[85vh] max-h-[700px] bg-[#1B1B1D] rounded-[20px] flex overflow-hidden shadow-2xl border border-[#2A2A2C]">
-
-        {/* LEFT PANEL - Insumos */}
+      
+      {/* ... (Modal Content) ... */}
+      <div className="relative w-[90vw] max-w-[1000px] h-[85vh] max-h-[750px] bg-[#1B1B1D] rounded-[20px] flex overflow-hidden shadow-2xl border border-[#2A2A2C]">
+            {/* ... (Left/Right panels same as before) ... */}
+            {/* Just ensuring I don't break existing structure, passing the return content back slightly modified to include FichaTecnicaPrint */}
+            
+        {/* LEFT PANEL - Changes based on Tab */}
         <div className="w-[380px] shrink-0 bg-[#151515] flex flex-col border-r border-[#2A2A2C]">
-          {/* Search Bar */}
-          <div className="p-5">
-            <div className="flex items-center bg-[#1E1E1E] rounded-[12px] border border-[#2A2A2C] px-4 py-3">
-              <input
-                type="text"
-                placeholder="Encontrar Insumos"
-                value={searchInsumo}
-                onChange={(e) => setSearchInsumo(e.target.value)}
-                className="flex-1 bg-transparent text-[13px] text-white placeholder-[#555] outline-none"
-              />
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <circle cx="11" cy="11" r="7" stroke="#555" strokeWidth="1.5"/>
-                <path d="M16.5 16.5L21 21" stroke="#555" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </div>
-          </div>
+            {/* ... (rest of the component) ... */}
 
-          <div className="flex-1 overflow-y-auto px-5 flex flex-col gap-2">
-            {/* Added Insumos Section */}
-            {addedInsumos.length > 0 && (
-              <>
-                <div className="mb-1">
-                  <div className="text-[13px] font-semibold text-white">Insumos</div>
-                  <div className="text-[11px] text-[#868686]">Insumos Adicionados</div>
-                </div>
-                {addedInsumos.map((insumo) => (
-                  <div
-                    key={insumo.id}
-                    className="bg-[#1E1E1E] rounded-[14px] p-3.5 flex items-center gap-3 border border-[#2A2A2C] cursor-pointer hover:border-[#F5A623]/30 transition-colors group"
-                    onClick={() => handleRemoveInsumo(insumo.id)}
-                  >
-                    <div className="w-[38px] h-[38px] rounded-[10px] bg-[#252527] flex items-center justify-center shrink-0">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke="#868686" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
+            {activeTab === 'operacional' ? (
+                // LEFT PANEL for OPERATIONAL (Photo & Finalization Preview?)
+                <div className="p-6 flex flex-col gap-6 h-full overflow-y-auto">
+                    {/* Foto do Prato */}
+                    <div>
+                        <label className="block text-[12px] text-[#868686] mb-2 font-medium">FOTO DO PRATO PRONTO</label>
+                        <div className="w-full aspect-square bg-[#1E1E1E] border-2 border-dashed border-[#2A2A2C] rounded-[16px] flex flex-col items-center justify-center cursor-pointer hover:border-[#F5A623]/50 transition-colors relative group overflow-hidden">
+                             {fotoPrato ? (
+                                 <>
+                                    <img src={fotoPrato} alt="Prato" className="w-full h-full object-cover" />
+                                    <button 
+                                        onClick={() => setFotoPrato(null)}
+                                        className="absolute top-2 right-2 bg-black/50 p-1 rounded-full text-white hover:bg-red-500 transition-colors"
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6L18 18"/></svg>
+                                    </button>
+                                 </>
+                             ) : (
+                                 <>
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5" className="mb-2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                        <circle cx="8.5" cy="8.5" r="1.5" />
+                                        <polyline points="21 15 16 10 5 21" />
+                                    </svg>
+                                    <span className="text-[12px] text-[#555]">Clique para adicionar foto</span>
+                                    {/* Hidden File Input Simulation */}
+                                    <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onload = (ev) => setFotoPrato(ev.target.result);
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                    />
+                                 </>
+                             )}
+                        </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-[13px] text-white">{insumo.name}</div>
-                      <div className="text-[11px] text-[#868686]">{insumo.qty}{insumo.unit}  R$ {insumo.price}</div>
-                    </div>
-                    <div className="bg-[#F5A623] text-black text-[10px] font-semibold px-3 py-1.5 rounded-full flex items-center gap-1 shrink-0 group-hover:bg-red-500 group-hover:text-white transition-colors">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#00B37E] group-hover:bg-white transition-colors" />
-                      <span className="group-hover:hidden">Adicionado</span>
-                      <span className="hidden group-hover:inline">Remover</span>
-                    </div>
-                  </div>
-                ))}
-                <div className="w-full h-px bg-[#2A2A2C] my-2" />
-              </>
-            )}
 
-            {/* Available Insumos to add */}
-            {filteredInsumos.length > 0 && (
-              <>
-                <div className="mb-1">
-                  <div className="text-[13px] font-semibold text-white">Disponíveis</div>
-                  <div className="text-[11px] text-[#868686]">Clique para adicionar</div>
-                </div>
-                {filteredInsumos.map((insumo) => (
-                  <div
-                    key={insumo.id}
-                    className="bg-[#1A1A1A] rounded-[14px] p-3.5 flex items-center gap-3 border border-[#222] cursor-pointer hover:border-[#F5A623]/40 hover:bg-[#1E1E1E] transition-all"
-                    onClick={() => handleAddInsumo(insumo)}
-                  >
-                    <div className="w-[38px] h-[38px] rounded-[10px] bg-[#202020] flex items-center justify-center shrink-0">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 5V19M5 12H19" stroke="#555" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
+                    {/* Finalização */}
+                    <div className="flex-1 flex flex-col">
+                         <label className="block text-[12px] text-[#868686] mb-2 font-medium">PADRÃO DE FINALIZAÇÃO E SAÍDA</label>
+                         <textarea
+                            value={finalizacao}
+                            onChange={(e) => setFinalizacao(e.target.value)}
+                            className="w-full flex-1 bg-[#1E1E1E] border border-[#2A2A2C] rounded-[12px] p-3 text-[13px] text-white resize-none outline-none focus:border-[#F5A623] transition-colors"
+                            placeholder="Descreva como o prato deve ser finalizado e montado para o serviço..."
+                         />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-[13px] text-[#AAA]">{insumo.name}</div>
-                      <div className="text-[10px] text-[#555]">{insumo.category} • {insumo.defaultQty}{insumo.unit}</div>
-                    </div>
-                    <div className="text-[11px] text-[#555]">R$ {insumo.price}</div>
-                  </div>
-                ))}
-              </>
-            )}
-
-            {filteredInsumos.length === 0 && addedInsumos.length === 0 && (
-              <div className="flex-1 flex items-center justify-center">
-                <p className="text-[12px] text-[#555]">Nenhum insumo encontrado</p>
-              </div>
-            )}
-          </div>
-
-          {/* New Insumo Form / Button */}
-          <div className="p-4 border-t border-[#2A2A2C]">
-            {showNewInsumoForm ? (
-              <div className="flex flex-col gap-3">
-                <div className="text-[12px] font-semibold text-white">Novo Insumo</div>
-                <input
-                  type="text"
-                  placeholder="Nome do insumo"
-                  value={newInsumo.name}
-                  onChange={(e) => setNewInsumo(p => ({ ...p, name: e.target.value }))}
-                  className="w-full bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] px-3 py-2.5 text-[12px] text-white placeholder-[#555] outline-none focus:border-[#F5A623] transition-colors"
-                  autoFocus
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <select
-                    value={newInsumo.category}
-                    onChange={(e) => setNewInsumo(p => ({ ...p, category: e.target.value }))}
-                    className="bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] px-3 py-2.5 text-[12px] text-white outline-none appearance-none"
-                  >
-                    {insumoCategoryOptions.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                  <div className="flex items-center bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] overflow-hidden">
-                    <input
-                      type="text"
-                      placeholder="Qtd"
-                      value={newInsumo.qty}
-                      onChange={(e) => setNewInsumo(p => ({ ...p, qty: e.target.value }))}
-                      className="w-12 bg-transparent px-3 py-2.5 text-[12px] text-white outline-none"
-                    />
-                    <select
-                      value={newInsumo.unit}
-                      onChange={(e) => setNewInsumo(p => ({ ...p, unit: e.target.value }))}
-                      className="bg-transparent text-[11px] text-[#868686] outline-none appearance-none pr-2"
-                    >
-                      <option value="gr">gr</option>
-                      <option value="ml">ml</option>
-                      <option value="un">un</option>
-                      <option value="kg">kg</option>
-                    </select>
-                  </div>
                 </div>
-                <div className="flex items-center bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] overflow-hidden">
-                  <span className="text-[12px] text-[#868686] pl-3 shrink-0">R$</span>
-                  <input
-                    type="text"
-                    placeholder="Preço"
-                    value={newInsumo.price}
-                    onChange={(e) => setNewInsumo(p => ({ ...p, price: e.target.value }))}
-                    className="flex-1 bg-transparent px-2 py-2.5 text-[12px] text-white outline-none"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowNewInsumoForm(false)}
-                    className="flex-1 text-[12px] text-[#868686] py-2 rounded-[10px] hover:bg-[#1E1E1E] transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleCreateNewInsumo}
-                    className="flex-1 bg-[#F5A623] text-black text-[12px] font-semibold py-2 rounded-[10px] hover:bg-[#E5961E] transition-colors"
-                  >
-                    Criar e Adicionar
-                  </button>
-                </div>
-              </div>
             ) : (
-              <button
-                onClick={() => setShowNewInsumoForm(true)}
-                className="flex items-center gap-3 w-full hover:bg-[#1E1E1E] rounded-[12px] p-2 transition-colors"
-              >
-                <div className="w-[40px] h-[40px] rounded-full bg-[#252527] flex items-center justify-center">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 5V19M5 12H19" stroke="#868686" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                </div>
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-[13px] text-white">Adicionar Insumo</div>
-                  <div className="text-[11px] text-[#868686]">Cadastre um novo insumo</div>
-                </div>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M9 6L15 12L9 18" stroke="#868686" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
+                // LEFT PANEL for CUSTOS (Insumos List) - Keeping existing logic
+                <>
+                  <div className="p-5">
+                    <div className="flex items-center bg-[#1E1E1E] rounded-[12px] border border-[#2A2A2C] px-4 py-3">
+                      <input
+                        type="text"
+                        placeholder="Encontrar Insumos"
+                        value={searchInsumo}
+                        onChange={(e) => setSearchInsumo(e.target.value)}
+                        className="flex-1 bg-transparent text-[13px] text-white placeholder-[#555] outline-none"
+                      />
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <circle cx="11" cy="11" r="7" stroke="#555" strokeWidth="1.5"/>
+                        <path d="M16.5 16.5L21 21" stroke="#555" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto px-5 flex flex-col gap-2">
+                    {/* Added Insumos Section */}
+                    {addedInsumos.length > 0 && (
+                      <>
+                        <div className="mb-1">
+                          <div className="text-[13px] font-semibold text-white">Insumos</div>
+                          <div className="text-[11px] text-[#868686]">Insumos Adicionados</div>
+                        </div>
+                        {addedInsumos.map((insumo) => (
+                          <div key={insumo.id} className="bg-[#1E1E1E] rounded-[14px] p-3.5 flex items-center gap-3 border border-[#2A2A2C] cursor-pointer hover:border-[#F5A623]/30 transition-colors group" onClick={() => handleRemoveInsumo(insumo.id)}>
+                            <div className="w-[38px] h-[38px] rounded-[10px] bg-[#252527] flex items-center justify-center shrink-0">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke="#868686" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-[13px] text-white">{insumo.name}</div>
+                              <div className="flex items-center gap-2 text-[11px] text-[#868686]">
+                                  <span>PL: {insumo.netQty || insumo.qty}{insumo.unit}</span>
+                                  <span className="w-1 h-1 rounded-full bg-[#555]" />
+                                  <span>PB: {insumo.grossQty || insumo.qty}{insumo.unit}</span>
+                                  <span className="w-1 h-1 rounded-full bg-[#555]" />
+                                  <span>FC: {insumo.fc || '1.00'}</span>
+                                  <span className="w-1 h-1 rounded-full bg-[#555]" />
+                                  <span className="text-[#00B37E]">R$ {insumo.price}</span>
+                              </div>
+                            </div>
+                            <div className="bg-[#F5A623] text-black text-[10px] font-semibold px-3 py-1.5 rounded-full flex items-center gap-1 shrink-0 group-hover:bg-red-500 group-hover:text-white transition-colors">
+                              <span className="group-hover:hidden">Adicionado</span>
+                              <span className="hidden group-hover:inline">Remover</span>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="w-full h-px bg-[#2A2A2C] my-2" />
+                      </>
+                    )}
+
+                    {/* Available Insumos */}
+                    {filteredInsumos.length > 0 && (
+                      <>
+                        <div className="mb-1">
+                          <div className="text-[13px] font-semibold text-white">Disponíveis</div>
+                          <div className="text-[11px] text-[#868686]">Clique para adicionar</div>
+                        </div>
+                        {filteredInsumos.map((insumo) => (
+                          <div key={insumo.id} className="bg-[#1A1A1A] rounded-[14px] p-3.5 flex items-center gap-3 border border-[#222] cursor-pointer hover:border-[#F5A623]/40 hover:bg-[#1E1E1E] transition-all" onClick={() => handleAddInsumo(insumo)}>
+                            <div className="w-[38px] h-[38px] rounded-[10px] bg-[#202020] flex items-center justify-center shrink-0">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="#555" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-[13px] text-[#AAA]">{insumo.name}</div>
+                              <div className="text-[10px] text-[#555]">{insumo.category} • {insumo.defaultQty}{insumo.unit}</div>
+                            </div>
+                            <div className="text-[11px] text-[#555]">R$ {insumo.price}</div>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* New Insumo Form */}
+                  <div className="p-4 border-t border-[#2A2A2C]">
+                    {!showNewInsumoForm ? (
+                      <button onClick={() => setShowNewInsumoForm(true)} className="flex items-center gap-3 w-full hover:bg-[#1E1E1E] rounded-[12px] p-2 transition-colors">
+                        <div className="w-[40px] h-[40px] rounded-full bg-[#252527] flex items-center justify-center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="#868686" strokeWidth="1.5" strokeLinecap="round"/></svg></div>
+                        <div className="flex-1 text-left"><div className="font-medium text-[13px] text-white">Adicionar Insumo</div><div className="text-[11px] text-[#868686]">Cadastre um novo insumo</div></div>
+                      </button>
+                    ) : (
+                         <div className="flex flex-col gap-3">
+                            <div className="text-[12px] font-semibold text-white">Novo Insumo</div>
+                            <input type="text" placeholder="Nome" value={newInsumo.name} onChange={(e) => setNewInsumo(p => ({ ...p, name: e.target.value }))} className="w-full bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] px-3 py-2.5 text-[12px] text-white outline-none" />
+                            
+                            <div className="grid grid-cols-2 gap-2">
+                                <select value={newInsumo.category} onChange={(e) => setNewInsumo(p => ({ ...p, category: e.target.value }))} className="col-span-2 bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] px-3 py-2.5 text-[12px] text-white outline-none">
+                                    {insumoCategoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                                
+                                {/* Net Quantity (PL) */}
+                                <div>
+                                    <label className="text-[10px] text-[#868686] mb-1 block">Qtd Líquida/Útil (PL)</label>
+                                    <div className="flex items-center bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] overflow-hidden">
+                                        <input type="text" placeholder="100" value={newInsumo.qty} onChange={(e) => setNewInsumo(p => ({ ...p, qty: e.target.value }))} className="w-full bg-transparent px-3 py-2 text-[12px] text-white outline-none" />
+                                    </div>
+                                </div>
+
+                                {/* Gross Quantity (PB) */}
+                                <div>
+                                    <label className="text-[10px] text-[#868686] mb-1 block">Qtd Bruta (PB)</label>
+                                    <div className="flex items-center bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] overflow-hidden">
+                                        <input type="text" placeholder="120" value={newInsumo.grossQty || ''} onChange={(e) => setNewInsumo(p => ({ ...p, grossQty: e.target.value }))} className="w-full bg-transparent px-3 py-2 text-[12px] text-white outline-none" />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2">
+                                {/* Unit Selection */}
+                                <div>
+                                    <label className="text-[10px] text-[#868686] mb-1 block">Unidade</label>
+                                    <select value={newInsumo.unit} onChange={(e) => setNewInsumo(p => ({ ...p, unit: e.target.value }))} className="w-full bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] px-3 py-2 text-[12px] text-white outline-none">
+                                        <option value="gr">gr</option>
+                                        <option value="ml">ml</option>
+                                        <option value="un">un</option>
+                                        <option value="kg">kg</option>
+                                    </select>
+                                </div>
+                                
+                                {/* Price (Total for Gross Qty) */}
+                                <div>
+                                    <label className="text-[10px] text-[#868686] mb-1 block">Custo Total (PB)</label>
+                                    <div className="flex items-center bg-[#1E1E1E] border border-[#2A2A2C] rounded-[10px] overflow-hidden">
+                                        <span className="text-[12px] text-[#868686] pl-2 shrink-0">R$</span>
+                                        <input type="text" placeholder="0,00" value={newInsumo.price} onChange={(e) => setNewInsumo(p => ({ ...p, price: e.target.value }))} className="w-full bg-transparent px-2 py-2 text-[12px] text-white outline-none" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 mt-1">
+                                <button onClick={() => setShowNewInsumoForm(false)} className="flex-1 text-[12px] text-[#868686] py-2 rounded-[10px] hover:bg-[#1E1E1E]">Cancelar</button>
+                                <button onClick={handleCreateNewInsumo} className="flex-1 bg-[#F5A623] text-black text-[12px] font-semibold py-2 rounded-[10px]">Adicionar</button>
+                            </div>
+                         </div>
+                    )}
+                  </div>
+                </>
             )}
-          </div>
         </div>
 
         {/* RIGHT PANEL - Form */}
         <div className="flex-1 flex flex-col bg-[#1B1B1D] p-8">
           {/* Header */}
-          <div className="flex items-start justify-between mb-10">
+          <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-[20px] font-bold text-white">{isEditing ? 'Editar Ficha Técnica' : 'Criar Ficha Técnica'}</h2>
-              <p className="text-[12px] text-[#868686] mt-1">{isEditing ? 'Atualize os dados da Ficha Técnica' : 'Cadastre uma nova Ficha Técnica'}</p>
+              <h2 className="text-[20px] font-bold text-white mb-2">{isEditing ? 'Editar Ficha Técnica' : 'Criar Ficha Técnica'}</h2>
+              
+              {/* TABS */}
+              <div className="flex items-center gap-1 bg-[#252527] p-1 rounded-[10px]">
+                  <button 
+                    onClick={() => setActiveTab('custos')}
+                    className={`px-4 py-1.5 rounded-[8px] text-[12px] font-semibold transition-all ${activeTab === 'custos' ? 'bg-[#3A3A3C] text-white shadow-sm' : 'text-[#868686] hover:text-[#CCC]'}`}
+                  >
+                    Custos & Insumos
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('operacional')}
+                    className={`px-4 py-1.5 rounded-[8px] text-[12px] font-semibold transition-all ${activeTab === 'operacional' ? 'bg-[#3A3A3C] text-white shadow-sm' : 'text-[#868686] hover:text-[#CCC]'}`}
+                  >
+                    Operacional
+                  </button>
+              </div>
             </div>
+            
             <div className="flex items-center gap-2">
-              {isEditing && (
-                <button
-                  onClick={() => onDelete(editingFicha.id)}
-                  className="w-[40px] h-[40px] rounded-[10px] bg-[#252527] flex items-center justify-center hover:bg-red-500/10 hover:text-red-500 text-[#868686] transition-colors group"
-                  title="Excluir Ficha Técnica"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </button>
-              )}
               <button className="w-[40px] h-[40px] rounded-[10px] bg-[#252527] flex items-center justify-center hover:bg-[#333] transition-colors" onClick={onClose}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6L18 18" stroke="#868686" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6L18 18" stroke="#868686" strokeWidth="1.5" strokeLinecap="round"/></svg>
               </button>
             </div>
           </div>
 
-          {/* Form Fields */}
-          <div className="flex flex-col gap-6 flex-1">
-            {/* Nome */}
-            <div>
-              <label className="block text-[12px] text-[#868686] mb-2">Nome</label>
-              <input
-                type="text"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="Nome da ficha técnica"
-                className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[12px] px-4 py-3.5 text-[14px] text-white placeholder-[#555] outline-none focus:border-[#F5A623] transition-colors"
-              />
-            </div>
+          {/* Form Content */}
+          <div className="flex flex-col gap-6 flex-1 overflow-y-auto pr-2">
+            
+            {activeTab === 'custos' ? (
+                // CUSTOS TAB FIELDS
+                <>
+                    <div className="flex flex-col gap-4">
+                        <div>
+                        <label className="block text-[12px] text-[#868686] mb-2">Nome</label>
+                        <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome da ficha técnica" className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[12px] px-4 py-3.5 text-[14px] text-white outline-none focus:border-[#F5A623] transition-colors" />
+                        </div>
+                        <div>
+                        <label className="block text-[12px] text-[#868686] mb-2">Categoria</label>
+                        <div className="relative">
+                            <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[12px] px-4 py-3.5 text-[14px] text-white outline-none appearance-none cursor-pointer focus:border-[#F5A623] transition-colors">
+                            {fichaCategoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                            <svg className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#868686" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9L12 15L18 9"/></svg>
+                        </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[12px] text-[#868686] mb-2">Rendimento (gr)</label>
+                            <input type="text" value={rendimento} onChange={(e) => setRendimento(e.target.value)} className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[12px] px-4 py-3.5 text-[14px] text-white outline-none focus:border-[#F5A623]" />
+                        </div>
+                        <div>
+                            <label className="block text-[12px] text-[#868686] mb-2">Custo Embalagem</label>
+                            <div className="flex items-center bg-[#252527] border border-[#2A2A2C] rounded-[12px] overflow-hidden">
+                                <span className="pl-4 text-[13px] text-[#868686]">R$</span>
+                                <input type="text" value={custoEmbalagem} onChange={(e) => setCustoEmbalagem(e.target.value)} className="flex-1 bg-transparent px-2 py-3.5 text-[14px] text-white outline-none" />
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </>
+            ) : (
+                // OPERATIONAL TAB FIELDS
+                <>
+                    <div className="flex flex-col gap-5">
+                         {/* Header fields */}
+                         <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[12px] text-[#868686] mb-2">Tempo de Preparo</label>
+                                <input 
+                                    type="text" 
+                                    value={tempoPreparo} 
+                                    onChange={(e) => setTempoPreparo(e.target.value)} 
+                                    placeholder="Ex: 45 min" 
+                                    className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[12px] px-4 py-3.5 text-[14px] text-white outline-none focus:border-[#F5A623]" 
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[12px] text-[#868686] mb-2">Utensílios Necessários</label>
+                                <input 
+                                    type="text" 
+                                    value={utensilios} 
+                                    onChange={(e) => setUtensilios(e.target.value)} 
+                                    placeholder="Ex: Faca, Tábua, Panela de Pressão" 
+                                    className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[12px] px-4 py-3.5 text-[14px] text-white outline-none focus:border-[#F5A623]" 
+                                />
+                            </div>
+                         </div>
 
-            {/* Categoria */}
-            <div>
-              <label className="block text-[12px] text-[#868686] mb-2">Categoria</label>
-              <div className="relative">
-                <select
-                  value={categoria}
-                  onChange={(e) => setCategoria(e.target.value)}
-                  className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[12px] px-4 py-3.5 text-[14px] text-white outline-none appearance-none cursor-pointer focus:border-[#F5A623] transition-colors"
-                >
-                  {fichaCategoryOptions.map(c => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <path d="M6 9L12 15L18 9" stroke="#868686" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div>
-            </div>
+                         {/* Steps */}
+                         <div>
+                             <div className="flex items-center justify-between mb-2">
+                                <label className="block text-[12px] text-[#868686]">MODO DE PREPARO E MONTAGEM (PASSO A PASSO)</label>
+                                <button onClick={addStep} className="text-[11px] text-[#F5A623] font-semibold hover:underline">+ Adicionar Passo</button>
+                             </div>
+                             <div className="flex flex-col gap-2">
+                                 {modoPreparo.map((step, idx) => (
+                                     <div key={idx} className="flex items-start gap-2 group">
+                                         <div className="w-6 h-6 mt-2 rounded-full bg-[#333] flex items-center justify-center text-[10px] text-[#888] font-bold shrink-0">
+                                            {idx + 1}
+                                         </div>
+                                         <textarea 
+                                            value={step}
+                                            onChange={(e) => updateStep(idx, e.target.value)}
+                                            placeholder={`Descreva o passo ${idx + 1}...`}
+                                            className="flex-1 bg-[#252527] border border-[#2A2A2C] rounded-[12px] p-3 text-[13px] text-white resize-none h-[60px] outline-none focus:border-[#F5A623] transition-colors"
+                                         />
+                                         <button 
+                                            onClick={() => removeStep(idx)}
+                                            className="mt-2 text-[#555] hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                         >
+                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6L18 18"/></svg>
+                                         </button>
+                                     </div>
+                                 ))}
+                             </div>
+                         </div>
+                    </div>
+                </>
+            )}
 
-            {/* Rendimento + Custo Embalagem */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[12px] text-[#868686] mb-2">Rendimento</label>
-                <div className="flex items-center bg-[#252527] border border-[#2A2A2C] rounded-[12px] overflow-hidden focus-within:border-[#F5A623] transition-colors">
-                  <input
-                    type="text"
-                    value={rendimento}
-                    onChange={(e) => setRendimento(e.target.value)}
-                    className="w-[60px] min-w-0 bg-transparent px-4 py-3.5 text-[14px] text-white outline-none flex-1"
-                  />
-                  <span className="text-[13px] text-[#868686] pr-4 shrink-0">Gramas</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-[12px] text-[#868686] mb-2">Custo da Embalagem</label>
-                <div className="flex items-center bg-[#252527] border border-[#2A2A2C] rounded-[12px] overflow-hidden focus-within:border-[#F5A623] transition-colors">
-                  <span className="text-[13px] text-[#868686] pl-4 shrink-0">R$</span>
-                  <input
-                    type="text"
-                    value={custoEmbalagem}
-                    onChange={(e) => setCustoEmbalagem(e.target.value)}
-                    placeholder=""
-                    className="flex-1 bg-transparent px-2 py-3.5 text-[14px] text-white outline-none"
-                  />
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Footer Buttons */}
-          <div className="flex items-center justify-between mt-8 pt-4">
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-[#2A2A2C]">
             <button
               onClick={onClose}
               className="text-[14px] text-[#F5A623] font-medium hover:text-[#E5961E] transition-colors"
             >
               Cancelar
             </button>
-            <button
-              onClick={handleSave}
-              className="bg-[#F5A623] text-black font-semibold text-[14px] px-8 py-3.5 rounded-[12px] hover:bg-[#E5961E] transition-colors"
-            >
-              {isEditing ? 'Atualizar Ficha Técnica' : 'Criar Ficha Técnica'}
-            </button>
+            <div className="flex items-center gap-3">
+                {/* Print Button (Only visible if Editing and in Operational Tab?) Or always? */}
+                {isEditing && (
+                    <button
+                        onClick={() => window.print()}
+                        className="px-4 py-3.5 rounded-[12px] bg-[#252527] text-white text-[14px] font-medium hover:bg-[#333] transition-colors flex items-center gap-2"
+                    >
+                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg> 
+                         Imprimir
+                    </button>
+                )}
+                
+                <button
+                onClick={handleSave}
+                className="bg-[#F5A623] text-black font-semibold text-[14px] px-8 py-3.5 rounded-[12px] hover:bg-[#E5961E] transition-colors"
+                >
+                {isEditing ? 'Atualizar Ficha' : 'Salvar Ficha'}
+                </button>
+            </div>
           </div>
         </div>
       </div>

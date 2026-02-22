@@ -45,49 +45,27 @@ const FinanceOverview = ({ data }) => {
       </div>
 
       {/* Bar Chart - Daily History (30 Days) */}
-      <div className="h-[60px] flex items-end justify-between gap-[3px] w-full mb-4 px-1 relative">
+      <div className="h-[60px] flex items-end justify-between gap-[6px] w-full mb-4 px-1 relative">
         {(() => {
-            // Parse Total Revenue for simulation
-            const numericTotal = parseFloat(data.total.replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
-            const daysInMonth = 30; // Visual fixo de 30 dias
-            const today = new Date().getDate(); // Dia atual (1-31)
-            
-            // Average based on elapsed days to match total
-            // If today is 1st, all revenue is on 1st.
-            const dailyAvg = today > 0 ? numericTotal / today : 0;
+            const monthsShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const currentMonthIdx = new Date().getMonth();
+            const maxVal = Math.max(...history, 1);
 
-            // Generate deterministic pseudo-random data based on index and total
-            const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
-               const day = i + 1;
-               if (day > today) return 0; // Future days are empty
-
-               // Last day (today) might be slightly lower or higher? Randomize.
-               // Pseudo-random factor
-               const factor = 1 + Math.sin(i * 0.8) * 0.5 + Math.cos(i * 0.3) * 0.3;
-               return Math.max(dailyAvg * factor, dailyAvg * 0.1); 
-            });
-
-            const maxVal = Math.max(...dailyData, 1); 
-            
-            return dailyData.map((val, i) => {
-              const isToday = i === (today - 1);
-              const isFuture = i > (today - 1);
+            return history.map((val, i) => {
+              const isCurrent = i === currentMonthIdx;
+              const isFuture = i > currentMonthIdx;
               const isSelected = selectedMonth === i;
 
               // Determine Color
-              // Priority: Selected -> Today -> Past (White) -> Future (Dark)
               let bgColor = 'bg-[#333]'; // Default/Future
               if (isSelected) bgColor = 'bg-[#FF9406]';
-              else if (isToday) bgColor = 'bg-[#FF9406]'; // Today is Orange
-              else if (val > 0) bgColor = 'bg-[#E1E1E1]'; // Past with data
+              else if (isCurrent) bgColor = 'bg-[#FF9406]'; 
+              else if (val > 0) bgColor = 'bg-[#E1E1E1]'; // Past/Present with data
 
               // Determine Opacity
-              // Future: 0.2
-              // Today: 1
-              // Past: 0.7 normally, 1 if hovered/selected
               let opacity = 0.3;
               if (isFuture) opacity = 0.2;
-              else if (isSelected || isToday || hoveredMonth === i) opacity = 1;
+              else if (isSelected || isCurrent || hoveredMonth === i) opacity = 1;
               else opacity = 0.6;
 
               return (
@@ -99,12 +77,16 @@ const FinanceOverview = ({ data }) => {
                 onClick={() => setSelectedMonth(i)}
               >
                  {/* Tooltip on Hover */}
-                 <AnimateTooltip show={hoveredMonth === i} value={val} label={isToday ? 'Hoje' : `Dia ${i + 1}`} />
+                 <AnimateTooltip 
+                    show={hoveredMonth === i} 
+                    value={val} 
+                    label={monthsShort[i]} 
+                 />
 
                 <div 
-                  className={`w-full max-w-[4px] rounded-[2px] transition-all duration-300 cursor-pointer ${bgColor} hover:bg-[#FF9406]`}
+                  className={`w-full max-w-[12px] rounded-[2px] transition-all duration-300 cursor-pointer ${bgColor} hover:bg-[#FF9406]`}
                   style={{ 
-                      height: isFuture ? '4px' : `${Math.max((val / maxVal) * 100, 10)}%`, 
+                      height: val > 0 ? `${Math.max((val / maxVal) * 100, 10)}%` : '4px', 
                       opacity: opacity
                   }}
                 />
