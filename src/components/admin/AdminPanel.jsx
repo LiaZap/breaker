@@ -42,6 +42,26 @@ const AdminPanel = () => {
     alert('Link copiado para a área de transferência!');
   };
 
+  const handleDeleteClient = (id) => {
+    if (!window.confirm("ATENÇÃO: Tem certeza que deseja excluir esse cliente? Todos os dados dele serão apagados.")) return;
+
+    fetch(`/api/admin/clients/${id}`, {
+      method: 'DELETE'
+    })
+    .then(res => res.json())
+    .then(data => {
+       if (data.success) {
+          setClients(prev => prev.filter(c => c.id !== id));
+       } else {
+          alert(data.error || "Erro ao excluir cliente");
+       }
+    })
+    .catch(err => {
+       console.error(err);
+       alert("Erro de conexão ao tentar excluir.");
+    });
+  };
+
   return (
     <div className="min-h-screen bg-[#101010] font-jakarta text-white p-6 md:p-12">
       <div className="max-w-5xl mx-auto">
@@ -110,6 +130,16 @@ const AdminPanel = () => {
                         <path d="M13.8284 10.1716L16.6569 7.34315C17.4379 6.5621 18.7042 6.5621 19.4853 7.34315C20.2663 8.1242 20.2663 9.39052 19.4853 10.1716L16.6569 13M10.1716 13.8284L7.34315 16.6569C6.5621 17.4379 5.29577 17.4379 4.51472 16.6569C3.73367 15.8758 3.73367 14.6095 4.51472 13.8284L7.34315 11M8.75736 15.2426L15.2426 8.75736" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                       Copiar Link
+                    </button>
+
+                    <button 
+                      onClick={() => handleDeleteClient(client.id)}
+                      className="flex items-center gap-1.5 text-[12px] text-[#555] font-medium hover:text-[#FF4560] transition-colors"
+                      title="Excluir Cliente"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                         <path d="M19 7L18.1327 19.1425C18.0579 20.1891 17.187 21 16.1378 21H7.86224C6.81296 21 5.94208 20.1891 5.86732 19.1425L5 7M10 11V17M14 11V17M15 7V4C15 3.44772 14.5523 3 14 3H10C9.44772 3 9 3.44772 9 4V7M4 7H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
                     </button>
                   </div>
                 </div>

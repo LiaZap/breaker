@@ -369,6 +369,10 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
   const [rendimento, setRendimento] = useState(editingFicha ? editingFicha.rendimento.replace(/[^0-9]/g, '') : '200');
   const [custoEmbalagem, setCustoEmbalagem] = useState(editingFicha ? editingFicha.custoEmbalagem.replace('R$', '') : '');
   
+  // Sales & Price Fields (Integration with Menu Engineering)
+  const [precoVenda, setPrecoVenda] = useState(editingFicha?.precoVenda || '');
+  const [vendasMes, setVendasMes] = useState(editingFicha?.vendasMes || '');
+  
   // Operational Fields
   const [tempoPreparo, setTempoPreparo] = useState(editingFicha?.tempoPreparo || '');
   const [utensilios, setUtensilios] = useState(editingFicha?.utensilios || '');
@@ -428,6 +432,10 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
       custoEmbalagem: `R$${custoEmb.toFixed(2).replace('.', ',')}`,
       rendimento: `${rendimento}gr`,
       custoTotal: `R$ ${(custoTotalInsumos + custoEmb).toFixed(2).replace('.', ',')}`,
+      
+      // Menu Engineering integration
+      precoVenda: `R$ ${(parseFloat(precoVenda.replace(',', '.')) || 0).toFixed(2).replace('.', ',')}`,
+      vendasMes: `${parseInt(vendasMes, 10) || 0}`,
       
       tempoPreparo,
       utensilios,
@@ -797,6 +805,41 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
                             </div>
                         </div>
                         </div>
+                        
+                        {/* Engenharia de Menu Fields */}
+                        <div className="bg-[#1E1E1E] p-4 rounded-[12px] border border-[#2A2A2C] mt-2">
+                           <div className="mb-3">
+                               <div className="text-[13px] font-semibold text-white">Integração com Engenharia de Menu</div>
+                               <div className="text-[11px] text-[#868686]">Preencha para classificar o prato automaticamente na Matriz de Preço.</div>
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                               <div>
+                                   <label className="block text-[11px] text-[#868686] mb-1.5">Preço de Venda Praticado</label>
+                                   <div className="flex items-center bg-[#131313] border border-[#333] rounded-[8px] overflow-hidden focus-within:border-[#F5A623] transition-colors">
+                                       <span className="pl-3 text-[12px] text-[#868686]">R$</span>
+                                       <input type="text" value={precoVenda} onChange={(e) => setPrecoVenda(e.target.value)} placeholder="0,00" className="flex-1 bg-transparent px-2 py-2.5 text-[13px] text-white outline-none" />
+                                   </div>
+                               </div>
+                               <div>
+                                   <label className="block text-[11px] text-[#868686] mb-1.5">Média de Vendas / Mês</label>
+                                   <div className="flex items-center bg-[#131313] border border-[#333] rounded-[8px] overflow-hidden focus-within:border-[#F5A623] transition-colors">
+                                       <input type="text" value={vendasMes} onChange={(e) => setVendasMes(e.target.value)} placeholder="Ex: 50" className="w-full bg-transparent px-3 py-2.5 text-[13px] text-white outline-none" />
+                                   </div>
+                               </div>
+                           </div>
+                           
+                           {/* Quick Margin Calculation Preview */}
+                           {parseFloat(precoVenda.replace(',', '.')) > 0 && (
+                               <div className="mt-3 pt-3 border-t border-[#333] flex items-center justify-between">
+                                  <div className="text-[11px] text-[#868686]">Lucro Bruto Estimado</div>
+                                  <div className={`text-[12px] font-bold ${
+                                     (parseFloat(precoVenda.replace(',', '.')) - (custoTotalInsumos + (parseFloat(custoEmbalagem.replace(',', '.')) || 0))) > 0 ? 'text-[#00B37E]' : 'text-[#FF4560]'
+                                  }`}>
+                                     R$ {(parseFloat(precoVenda.replace(',', '.')) - (custoTotalInsumos + (parseFloat(custoEmbalagem.replace(',', '.')) || 0))).toFixed(2).replace('.', ',')}
+                                  </div>
+                               </div>
+                           )}
+                        </div>
                     </div>
                 </>
             ) : (
@@ -921,12 +964,39 @@ const FichaTecnica = () => {
       newFichas = [...fichas, fichaData];
     }
     
+    // ======================================
+    // MENU ENGINEERING SYNC
+    // ======================================
+    const priceStr = String(fichaData.precoVenda || '0').replace('R$', '').trim().replace(',', '.');
+    const priceFloat = parseFloat(priceStr) || 0;
+    
+    let newMenuEngineering = [...(dashboardData.menuEngineering || [])];
+    
+    if (priceFloat > 0 && fichaData.vendasMes) {
+        const menuData = {
+            id: `ft_${fichaData.id}`, // link prefix
+            name: fichaData.name,
+            category: fichaData.type,
+            sales: String(fichaData.vendasMes),
+            price: `R$ ${priceFloat.toFixed(2).replace('.', ',')}`,
+            cost: fichaData.custoTotal
+        };
+        
+        const existingIdx = newMenuEngineering.findIndex(m => m.id === menuData.id || m.name.toLowerCase() === menuData.name.toLowerCase());
+        if (existingIdx >= 0) {
+            newMenuEngineering[existingIdx] = menuData;
+        } else {
+            newMenuEngineering.push(menuData);
+        }
+    }
+    
     // Update Context
     updateDashboardData({
         operational: {
             ...dashboardData.operational,
             fichas: newFichas
-        }
+        },
+        menuEngineering: newMenuEngineering
     });
   };
 

@@ -49,15 +49,23 @@ const MatrizPreco = () => {
   const realItems = dashboardData.menuEngineering || [];
   const displayItems = realItems.length > 0 ? realItems : initialItems; 
 
+  // Helper to parse currency safely
+  const parseCurrency = (val) => {
+      if (typeof val === 'number') return val;
+      if (!val) return 0;
+      const str = String(val).replace('R$', '').trim().replace(',', '.');
+      return parseFloat(str) || 0;
+  };
+
   // 1. Calculate Metrics
   const itemsWithMetrics = useMemo(() => {
     return displayItems.map(item => ({
       ...item,
       category: item.category || 'Geral',
       sales: Number(item.sales || 0),
-      price: Number(item.price || 0),
-      cost: Number(item.cost || 0),
-      margin: Number(item.price || 0) - Number(item.cost || 0),
+      price: parseCurrency(item.price),
+      cost: parseCurrency(item.cost),
+      margin: parseCurrency(item.price) - parseCurrency(item.cost),
     }));
   }, [displayItems]);
 

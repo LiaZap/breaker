@@ -58,6 +58,20 @@ router.get('/admin/clients', async (req, res) => {
   }
 });
 
+// Delete Client
+router.delete('/admin/clients/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.client.delete({
+      where: { id }
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao excluir cliente' });
+  }
+});
+
 // ========================
 // CLIENT ROUTES
 // ========================
