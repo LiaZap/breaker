@@ -138,7 +138,7 @@ const MatrizPreco = () => {
       {/* LEFT PANEL: LIST */}
       <div className="w-full md:w-[320px] shrink-0 flex flex-col gap-6 overflow-hidden">
         <div>
-          <div className="text-[12px] text-[#868686] mb-1">Breaker &gt; Precificação</div>
+          <div className="text-[12px] text-[#868686] mb-1">Breakr &gt; Precificação</div>
           <h1 className="text-[24px] font-bold leading-tight">Engenharia de<br/>Menu</h1>
           <p className="text-[12px] text-[#868686] mt-2">Configure seus custos e veja dados e informações</p>
         </div>

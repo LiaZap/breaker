@@ -94,13 +94,13 @@ const SplashScreen = ({ onComplete }) => {
                      {!imageError ? (
                         <img 
                           src={logoImg} 
-                          alt="Breaker" 
+                          alt="Breakr" 
                           className="w-[107.79px] h-[38.75px] object-contain"
                           onError={() => setImageError(true)}
                         />
                      ) : (
                         <span className="font-jakarta font-bold text-3xl tracking-tighter text-white">
-                          Breaker
+                          Breakr
                         </span>
                      )}
                 </motion.div>
