@@ -302,6 +302,30 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                                           <option value="">Selecione</option>
                                           {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                       </select>
+                                  ) : field.type === 'file' ? (
+                                      <div className="flex items-center gap-2 mt-1">
+                                          <label className="cursor-pointer flex items-center justify-center bg-[#2A2A2A] border border-[#444] hover:border-[#FFC100] text-white text-xs px-3 py-1.5 rounded transition-colors w-full">
+                                              <span>{formData[question.id]?.[idx]?.[field.id] ? "Alterar Foto" : field.placeholder}</span>
+                                              <input
+                                                  type="file"
+                                                  accept="image/*"
+                                                  className="hidden"
+                                                  onChange={(e) => {
+                                                      const file = e.target.files[0];
+                                                      if (file) {
+                                                          const reader = new FileReader();
+                                                          reader.onloadend = () => {
+                                                              handleGroupChange(question.id, idx, field.id, reader.result, field.type);
+                                                          };
+                                                          reader.readAsDataURL(file);
+                                                      }
+                                                  }}
+                                              />
+                                          </label>
+                                          {formData[question.id]?.[idx]?.[field.id] && (
+                                              <img src={formData[question.id]?.[idx]?.[field.id]} alt="Preview" className="w-6 h-6 rounded-full object-cover border border-[#444]" />
+                                          )}
+                                      </div>
                                   ) : (
                                       <input
                                         type="text"
@@ -430,6 +454,30 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                                             <option value="">Selecione</option>
                                             {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                         </select>
+                                    ) : field.type === 'file' ? (
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <label className="cursor-pointer flex items-center justify-center bg-[#2A2A2A] border border-[#444] hover:border-[#FFC100] text-white text-xs px-3 py-1.5 rounded transition-colors w-full">
+                                                <span>{item[field.id] ? "Alterar Foto" : field.placeholder}</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            const reader = new FileReader();
+                                                            reader.onloadend = () => {
+                                                                handleGroupChange(question.id, idx, field.id, reader.result, field.type);
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                            {item[field.id] && (
+                                                <img src={item[field.id]} alt="Preview" className="w-6 h-6 rounded-full object-cover border border-[#444]" />
+                                            )}
+                                        </div>
                                     ) : (
                                         <input
                                             type="text"

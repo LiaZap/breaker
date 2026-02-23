@@ -139,6 +139,21 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
   const fc = pl > 0 && typeof pb === 'number' ? (pb / pl).toFixed(2) : '1.00';
   const rendimentoPerc = pb > 0 ? Math.round((pl / pb) * 100) : 100;
 
+  // Custo Líquido Calculation
+  const numericCusto = parseFloat(custo.replace(',', '.')) || 0;
+  // If we buy PB amount for `numericCusto`, the price per unit of PB is (numericCusto / pb).
+  // But we only get PL amount of usable product for that same `numericCusto`.
+  // So the effective price per unit of PL (Custo Líquido) is (numericCusto / pl).
+  const unitPricePB = pb > 0 ? (numericCusto / pb) : 0;
+  const unitPricePL = pl > 0 ? (numericCusto / pl) : 0;
+  
+  // Alternative way to think: Custo Líquido = Custo Bruto * FC
+  // Let's display the total effective cost or the cost per unit?
+  // Usually, in "Custo de Compra", the user puts the price for the FULL PB amount. 
+  // e.g. "R$ 20,00" for "Qtd Bruta 1000g". So the PB unit cost is R$ 0,02/g.
+  // If PL is 800g, the PL unit cost is R$ 20,00 / 800g = R$ 0,025/g.
+  // We can show this unit cost to make it clear.
+
   const handleSave = () => {
     if (!nome.trim()) return;
     onSave({
@@ -211,7 +226,7 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
                 className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[12px] px-4 py-3.5 text-[14px] text-white outline-none focus:border-[#F5A623] transition-colors appearance-none cursor-pointer"
               >
                 {categoryOptions.map(c => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c} className="bg-[#1B1B1D] text-white">{c}</option>
                 ))}
               </select>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -230,10 +245,10 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
                   onChange={(e) => setUnit(e.target.value)}
                   className="w-full bg-transparent px-4 py-3.5 text-[14px] text-white outline-none appearance-none cursor-pointer"
                 >
-                  <option value="gr">Gramas (gr)</option>
-                  <option value="ml">Mililitros (ml)</option>
-                  <option value="un">Unidade (un)</option>
-                  <option value="kg">Quilogramas (kg)</option>
+                  <option value="gr" className="bg-[#1B1B1D] text-white">Gramas (gr)</option>
+                  <option value="ml" className="bg-[#1B1B1D] text-white">Mililitros (ml)</option>
+                  <option value="un" className="bg-[#1B1B1D] text-white">Unidade (un)</option>
+                  <option value="kg" className="bg-[#1B1B1D] text-white">Quilogramas (kg)</option>
                 </select>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                    <path d="M6 9L12 15L18 9" stroke="#868686" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -261,7 +276,7 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
               <label className="text-[13px] font-semibold text-white">Cálculo de Correção</label>
               <div className="text-[11px] bg-[#1E1E1E] px-2.5 py-1 rounded-[6px] text-[#868686]">FC: <span className="text-[#F5A623] font-bold">{fc}</span> | Rend: <span className="text-[#00B37E] font-bold">{rendimentoPerc}%</span></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 mb-3">
               <div>
                 <label className="block text-[11px] text-[#868686] mb-1">Qtd Bruta (Comprada)</label>
                 <div className="flex items-center border-b border-[#3A3A3C] pb-1 focus-within:border-[#F5A623] transition-colors">
@@ -289,6 +304,15 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
                 </div>
               </div>
             </div>
+            {/* Visualizando o custo real por unidade daquele insumo */}
+            {unitPricePL > 0 && (
+                <div className="pt-3 mt-2 border-t border-[#3A3A3C] flex items-center justify-between">
+                   <div className="text-[11px] text-[#868686]">Custo Real Mapeado (Líquido)</div>
+                   <div className="text-[12px] font-semibold text-white">
+                      R$ {unitPricePL.toFixed(4).replace('.', ',')} <span className="text-[#868686] font-normal text-[10px]">/ {unit}</span>
+                   </div>
+                </div>
+            )}
           </div>
           
         </div>
@@ -370,9 +394,26 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
         return;
     }
     const custoTotalInsumos = addedInsumos.reduce((sum, i) => {
-      // Price is now Total Cost of PB
-      const price = parseFloat(String(i.price).replace('R$','').replace(',', '.')) || 0;
-      return sum + price;
+      // The insumo object has 'price' (Total Cost of PB), 'grossQty' (PB) and 'netQty'/'qty' (PL).
+      // Let's calculate the cost of the amount required by the Ficha (which is i.qty).
+      const totalPricePB = parseFloat(String(i.price).replace('R$','').replace(',', '.')) || 0;
+      
+      // If we know the PB, we can find the unit cost. Otherwise we fallback to the raw price.
+      const pb = parseFloat(String(i.grossQty || i.pesoBruto || i.defaultQty || 1).replace(',', '.')) || 1;
+      const unitCost = totalPricePB / pb; // cost per unit of PB
+      
+      // We also need the FC to know how much PB we need for the requested PL (i.qty).
+      // i.qty represents the requested PL (Net Qty) in the Ficha's ingredient list.
+      const requiredPL = parseFloat(String(i.qty).replace(',', '.')) || 0;
+      const fc = parseFloat(String(i.fc).replace(',', '.')) || 1;
+      
+      // The required amount of PB to get that PL is PL * FC.
+      const requiredPB = requiredPL * fc;
+      
+      // The actual cost is the amount of PB required * the cost per unit of PB.
+      const actualCost = requiredPB * unitCost;
+
+      return sum + actualCost;
     }, 0);
     const custoEmb = parseFloat(custoEmbalagem.replace(',', '.')) || 0;
     
@@ -580,14 +621,16 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-[13px] text-white">{insumo.name}</div>
-                              <div className="flex items-center gap-2 text-[11px] text-[#868686]">
-                                  <span>PL: {insumo.netQty || insumo.qty}{insumo.unit}</span>
-                                  <span className="w-1 h-1 rounded-full bg-[#555]" />
-                                  <span>PB: {insumo.grossQty || insumo.qty}{insumo.unit}</span>
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#868686]">
+                                  <span>PL req: <span className="font-medium text-white">{insumo.qty}{insumo.unit}</span></span>
                                   <span className="w-1 h-1 rounded-full bg-[#555]" />
                                   <span>FC: {insumo.fc || '1.00'}</span>
                                   <span className="w-1 h-1 rounded-full bg-[#555]" />
-                                  <span className="text-[#00B37E]">R$ {insumo.price}</span>
+                                  <span>PB req: {((parseFloat(String(insumo.qty).replace(',', '.')) || 0) * (parseFloat(String(insumo.fc).replace(',', '.')) || 1)).toFixed(1)}{insumo.unit}</span>
+                                  <span className="w-1 h-1 rounded-full bg-[#555]" />
+                                  <span className="text-[#00B37E]">
+                                    Cost: R$ {(((parseFloat(String(insumo.price).replace('R$','').replace(',', '.')) || 0) / (parseFloat(String(insumo.grossQty || insumo.pesoBruto || insumo.defaultQty || 1).replace(',', '.')) || 1)) * ((parseFloat(String(insumo.qty).replace(',', '.')) || 0) * (parseFloat(String(insumo.fc).replace(',', '.')) || 1))).toFixed(2)}
+                                  </span>
                               </div>
                             </div>
                             <div className="bg-[#F5A623] text-black text-[10px] font-semibold px-3 py-1.5 rounded-full flex items-center gap-1 shrink-0 group-hover:bg-red-500 group-hover:text-white transition-colors">
@@ -1042,23 +1085,15 @@ const FichaTecnica = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="flex flex-col gap-4 mb-4">
               <div>
-                <div className="text-[10px] text-[#868686] mb-1">Custo Médio Embalagem</div>
-                <div className="text-[22px] font-bold text-white">R$1,29</div>
-                <div className="text-[10px] text-[#868686]">Por Pedido</div>
-              </div>
-              <div>
-                <div className="text-[10px] text-[#868686] mb-1">Categorias</div>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <div className="flex -space-x-1">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="w-[14px] h-[14px] rounded-full bg-[#F5A623] border border-[#101010]" />
-                    ))}
-                  </div>
-                  <span className="text-[10px] text-[#868686]">Aluguel +25 outras</span>
+                <div className="text-[12px] text-[#E0E0E0] font-medium mb-1">Custo Médio Embalagem</div>
+                <div className="text-[24px] font-bold text-white">
+                  R$ {fichas.length > 0 
+                      ? (fichas.reduce((acc, f) => acc + (parseFloat(String(f.custoEmbalagem || '0').replace('R$', '').trim().replace(',', '.')) || 0), 0) / fichas.length).toFixed(2).replace('.', ',') 
+                      : '0,00'}
                 </div>
-                <div className="text-[10px] text-[#868686] mt-1">Gestão de Categorias</div>
+                <div className="text-[11px] text-[#A0A0A0]">Por Ficha Técnica (Média)</div>
               </div>
             </div>
           </div>

@@ -31,7 +31,8 @@ export const onboardingQuestions = [
     fields: [
       { id: 'name', label: 'Nome', type: 'text', placeholder: 'Nome do Sócio' },
       { id: 'role', label: 'Cargo', type: 'text', placeholder: 'Ex: Diretor' },
-      { id: 'pro_labore', label: 'Pró-Labore (R$)', type: 'currency', placeholder: 'R$ 0,00', helpText: 'Valor fiscal retirado, não o lucro.' }
+      { id: 'pro_labore', label: 'Pró-Labore (R$)', type: 'currency', placeholder: 'R$ 0,00', helpText: 'Valor fiscal retirado, não o lucro.' },
+      { id: 'photo', label: 'Foto (Opcional)', type: 'file', placeholder: 'Anexar foto' }
     ]
   },
 

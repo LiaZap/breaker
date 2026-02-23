@@ -111,7 +111,9 @@ const AdminLogin = ({ onLogin }) => {
         </form>
 
         <div className="mt-12 opacity-30 hover:opacity-100 transition-opacity">
-           <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/1200px-React-icon.svg.png" className="w-6 h-6 grayscale brightness-200" alt="" />
+            <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg" fill="white">
+                <path d="M12 21.362A9.362 9.362 0 102.638 12 9.373 9.373 0 0012 21.362zm0-17.5A8.138 8.138 0 113.862 12 8.147 8.147 0 0112 3.862zM12 10.51a1.49 1.49 0 101.49 1.49A1.492 1.492 0 0012 10.51z"/>
+            </svg>
         </div>
 
       </motion.div>

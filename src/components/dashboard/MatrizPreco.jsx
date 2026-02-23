@@ -4,28 +4,28 @@ import { useDashboard } from '../../context/DashboardContext';
 // ============ MOCK DATA ============
 const initialItems = [
   // ESTRELAS (High Sales, High Margin)
-  { id: 1, name: "Hot Roll Salmão", sales: 85, price: 45.90, cost: 12.00 }, // Margin: 33.90
-  { id: 2, name: "Temaki Tradicional", sales: 72, price: 28.50, cost: 8.00 }, // Margin: 20.50
-  { id: 3, name: "Yakisoba Clássico", sales: 90, price: 38.00, cost: 10.00 }, // Margin: 28.00
-  { id: 4, name: "Combinado da Casa", sales: 65, price: 85.00, cost: 35.00 }, // Margin: 50.00
-  { id: 5, name: "Gyoza Suíno", sales: 78, price: 22.00, cost: 6.00 }, // Margin: 16.00
+  { id: 1, name: "Hot Roll Salmão", sales: 85, price: 45.90, cost: 12.00, category: 'Sushi' }, // Margin: 33.90
+  { id: 2, name: "Temaki Tradicional", sales: 72, price: 28.50, cost: 8.00, category: 'Sushi' }, // Margin: 20.50
+  { id: 3, name: "Yakisoba Clássico", sales: 90, price: 38.00, cost: 10.00, category: 'Pratos Quentes' }, // Margin: 28.00
+  { id: 4, name: "Combinado da Casa", sales: 65, price: 85.00, cost: 35.00, category: 'Combinados' }, // Margin: 50.00
+  { id: 5, name: "Gyoza Suíno", sales: 78, price: 22.00, cost: 6.00, category: 'Entradas' }, // Margin: 16.00
 
   // POPULARES (High Sales, Low Margin) - "Burros de Carga"
-  { id: 6, name: "Rolinho Primavera", sales: 95, price: 12.00, cost: 8.00 }, // Margin: 4.00
-  { id: 7, name: "Água Mineral", sales: 120, price: 6.00, cost: 3.00 }, // Margin: 3.00
-  { id: 8, name: "Refrigerante Lata", sales: 110, price: 7.00, cost: 4.50 }, // Margin: 2.50
-  { id: 9, name: "Missoshiru", sales: 68, price: 10.00, cost: 7.00 }, // Margin: 3.00
+  { id: 6, name: "Rolinho Primavera", sales: 95, price: 12.00, cost: 8.00, category: 'Entradas' }, // Margin: 4.00
+  { id: 7, name: "Água Mineral", sales: 120, price: 6.00, cost: 3.00, category: 'Bebidas' }, // Margin: 3.00
+  { id: 8, name: "Refrigerante Lata", sales: 110, price: 7.00, cost: 4.50, category: 'Bebidas' }, // Margin: 2.50
+  { id: 9, name: "Missoshiru", sales: 68, price: 10.00, cost: 7.00, category: 'Entradas' }, // Margin: 3.00
 
   // POTENCIAIS (Low Sales, High Margin) - "Quebra-Cabeças"
-  { id: 10, name: "Sashimi Toro", sales: 15, price: 120.00, cost: 40.00 }, // Margin: 80.00
-  { id: 11, name: "Lagosta Gratinada", sales: 8, price: 150.00, cost: 60.00 }, // Margin: 90.00
-  { id: 12, name: "Saquê Premium", sales: 12, price: 89.00, cost: 30.00 }, // Margin: 59.00
-  { id: 13, name: "Vieiras Trufadas", sales: 20, price: 95.00, cost: 35.00 }, // Margin: 60.00
+  { id: 10, name: "Sashimi Toro", sales: 15, price: 120.00, cost: 40.00, category: 'Sashimi' }, // Margin: 80.00
+  { id: 11, name: "Lagosta Gratinada", sales: 8, price: 150.00, cost: 60.00, category: 'Especiais' }, // Margin: 90.00
+  { id: 12, name: "Saquê Premium", sales: 12, price: 89.00, cost: 30.00, category: 'Bebidas' }, // Margin: 59.00
+  { id: 13, name: "Vieiras Trufadas", sales: 20, price: 95.00, cost: 35.00, category: 'Especiais' }, // Margin: 60.00
 
   // CRÍTICOS (Low Sales, Low Margin) - "Cachorros"
-  { id: 14, name: "Tempurá Legumes", sales: 10, price: 18.00, cost: 14.00 }, // Margin: 4.00
-  { id: 15, name: "Chá Verde", sales: 5, price: 8.00, cost: 6.00 }, // Margin: 2.00
-  { id: 16, name: "Edamame Simples", sales: 18, price: 20.00, cost: 16.00 }, // Margin: 4.00
+  { id: 14, name: "Tempurá Legumes", sales: 10, price: 18.00, cost: 14.00, category: 'Entradas' }, // Margin: 4.00
+  { id: 15, name: "Chá Verde", sales: 5, price: 8.00, cost: 6.00, category: 'Bebidas' }, // Margin: 2.00
+  { id: 16, name: "Edamame Simples", sales: 18, price: 20.00, cost: 16.00, category: 'Entradas' }, // Margin: 4.00
 ];
 
 const CATEGORIES = {
@@ -37,7 +37,8 @@ const CATEGORIES = {
 
 const MatrizPreco = () => {
   const { dashboardData } = useDashboard();
-  const [activeCategory, setActiveCategory] = useState(null); // Filter by click on chips
+  const [activeCategory, setActiveCategory] = useState(null); // Filter by click on chips (classification)
+  const [selectedMenuCategory, setSelectedMenuCategory] = useState("Todas"); // Filter by menu category (Pratos, Bebidas, etc.)
 
   // Use Real Data or Fallback to Initial Items if empty (for demo purposes, or better: just real data if we want to be strict)
   // User request: "has to be real dishes". So we should prioritize real data.
@@ -46,13 +47,13 @@ const MatrizPreco = () => {
   // But wait, the user currently sees the mock data and wants to see REAL data.
   // I will check if there is data.
   const realItems = dashboardData.menuEngineering || [];
-  const displayItems = realItems.length > 0 ? realItems : []; 
+  const displayItems = realItems.length > 0 ? realItems : initialItems; 
 
   // 1. Calculate Metrics
   const itemsWithMetrics = useMemo(() => {
     return displayItems.map(item => ({
       ...item,
-      // Ensure numbers
+      category: item.category || 'Geral',
       sales: Number(item.sales || 0),
       price: Number(item.price || 0),
       cost: Number(item.cost || 0),
@@ -60,41 +61,62 @@ const MatrizPreco = () => {
     }));
   }, [displayItems]);
 
-  const averages = useMemo(() => {
-    const totalSales = itemsWithMetrics.reduce((sum, item) => sum + item.sales, 0);
-    const totalMargin = itemsWithMetrics.reduce((sum, item) => sum + item.margin, 0);
-    return {
-      sales: totalSales / itemsWithMetrics.length,
-      margin: totalMargin / itemsWithMetrics.length,
-    };
+  const uniqueMenuCategories = useMemo(() => {
+    const cats = new Set(itemsWithMetrics.map(item => item.category));
+    return ["Todas", ...Array.from(cats)].sort();
   }, [itemsWithMetrics]);
 
-  // 2. Classify Items
+  const averagesByCategory = useMemo(() => {
+    const avgs = {};
+    const categories = new Set(itemsWithMetrics.map(i => i.category));
+
+    categories.forEach(cat => {
+        const catItems = itemsWithMetrics.filter(i => i.category === cat);
+        const totalSales = catItems.reduce((sum, item) => sum + item.sales, 0);
+        const totalMargin = catItems.reduce((sum, item) => sum + item.margin, 0);
+        avgs[cat] = {
+            sales: totalSales / (catItems.length || 1),
+            margin: totalMargin / (catItems.length || 1),
+        };
+    });
+    return avgs;
+  }, [itemsWithMetrics]);
+
+  // 2. Classify Items (always compare against their OWN category average)
   const classifiedItems = useMemo(() => {
     return itemsWithMetrics.map(item => {
+      const avg = averagesByCategory[item.category];
       let type;
-      if (item.sales >= averages.sales && item.margin >= averages.margin) type = 'ESTRELA';
-      else if (item.sales >= averages.sales && item.margin < averages.margin) type = 'POPULAR';
-      else if (item.sales < averages.sales && item.margin >= averages.margin) type = 'POTENCIAL';
+      if (item.sales >= avg.sales && item.margin >= avg.margin) type = 'ESTRELA';
+      else if (item.sales >= avg.sales && item.margin < avg.margin) type = 'POPULAR';
+      else if (item.sales < avg.sales && item.margin >= avg.margin) type = 'POTENCIAL';
       else type = 'CRITICO';
       
       return { ...item, type };
     });
-  }, [itemsWithMetrics, averages]);
+  }, [itemsWithMetrics, averagesByCategory]);
 
-  // 3. Counts
+  const filteredItemsForDisplay = useMemo(() => {
+    if (selectedMenuCategory === "Todas") return classifiedItems;
+    return classifiedItems.filter(i => i.category === selectedMenuCategory);
+  }, [classifiedItems, selectedMenuCategory]);
+
+  // 3. Counts (based on filtered view)
   const counts = useMemo(() => {
     const c = { ESTRELA: 0, POPULAR: 0, POTENCIAL: 0, CRITICO: 0 };
-    classifiedItems.forEach(item => c[item.type]++);
+    filteredItemsForDisplay.forEach(item => c[item.type]++);
     return c;
-  }, [classifiedItems]);
+  }, [filteredItemsForDisplay]);
 
-  // 4. Chart Scaling
+  // 4. Chart Scaling (based on filtered view)
   const chartConfig = useMemo(() => {
-    const maxSales = Math.max(...classifiedItems.map(i => i.sales)) * 1.15; // +Buffer
-    const maxMargin = Math.max(...classifiedItems.map(i => i.margin)) * 1.15;
-    return { maxX: maxSales, maxY: maxMargin };
-  }, [classifiedItems]);
+    const maxSales = Math.max(0, ...filteredItemsForDisplay.map(i => i.sales)) * 1.15; // +Buffer
+    const maxMargin = Math.max(0, ...filteredItemsForDisplay.map(i => i.margin)) * 1.15;
+    return { 
+        maxX: maxSales || 10, 
+        maxY: maxMargin || 10 
+    };
+  }, [filteredItemsForDisplay]);
 
   const [hoveredItem, setHoveredItem] = useState(null);
 
@@ -116,7 +138,7 @@ const MatrizPreco = () => {
         {/* Categories List */}
         <div className="flex-1 overflow-y-auto pr-2 space-y-4">
           {Object.entries(CATEGORIES).map(([key, config]) => {
-            const categoryItems = classifiedItems.filter(i => i.type === key);
+            const categoryItems = filteredItemsForDisplay.filter(i => i.type === key);
             if (categoryItems.length === 0) return null;
 
             return (
@@ -159,9 +181,25 @@ const MatrizPreco = () => {
         
         {/* Header / Filter Chips */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6 z-10 relative">
-          <div>
-             <h2 className="text-[18px] font-bold text-white">Matriz de Cardápio</h2>
-             <p className="text-[12px] text-[#868686]">Entenda cada prato do menu e seu posicionamento.</p>
+          <div className="flex gap-4 items-center">
+             <div>
+                 <h2 className="text-[18px] font-bold text-white">Matriz de Cardápio</h2>
+                 <p className="text-[12px] text-[#868686]">Comparativo de pratos contra a média da própria categoria.</p>
+             </div>
+             
+             {/* MENU CATEGORY DROPDOWN */}
+             <div className="ml-4 pl-4 border-l border-[#2A2A2C]">
+                <label className="block text-[10px] text-[#868686] mb-1">Filtrar Categoria</label>
+                <select 
+                   className="bg-[#151515] text-[12px] text-white border border-[#2A2A2C] rounded-[8px] px-3 py-1.5 outline-none hover:border-[#444] min-w-[120px]"
+                   value={selectedMenuCategory}
+                   onChange={(e) => setSelectedMenuCategory(e.target.value)}
+                >
+                    {uniqueMenuCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                </select>
+             </div>
           </div>
           <div className="flex items-center gap-2">
             {Object.entries(CATEGORIES).map(([key, config]) => (
@@ -214,14 +252,28 @@ const MatrizPreco = () => {
               ))}
 
               {/* Quadrant Lines (Average Lines) */}
-              <line 
-                x1={`${getX(averages.sales)}%`} y1="0" x2={`${getX(averages.sales)}%`} y2="100%" 
-                stroke="#555" strokeWidth="1" strokeDasharray="4 4" 
-              />
-              <line 
-                x1="0" y1={`${getY(averages.margin)}%`} x2="100%" y2={`${getY(averages.margin)}%`} 
-                stroke="#555" strokeWidth="1" strokeDasharray="4 4" 
-              />
+              {selectedMenuCategory !== "Todas" && averagesByCategory[selectedMenuCategory] ? (
+                  <>
+                      <line 
+                        x1={`${getX(averagesByCategory[selectedMenuCategory].sales)}%`} y1="0" 
+                        x2={`${getX(averagesByCategory[selectedMenuCategory].sales)}%`} y2="100%" 
+                        stroke="#888" strokeWidth="1" strokeDasharray="4 4" 
+                      />
+                      <line 
+                        x1="0" y1={`${getY(averagesByCategory[selectedMenuCategory].margin)}%`} 
+                        x2="100%" y2={`${getY(averagesByCategory[selectedMenuCategory].margin)}%`} 
+                        stroke="#888" strokeWidth="1" strokeDasharray="4 4" 
+                      />
+                      
+                      {/* Sub-label for lines */}
+                      <text x={`${getX(averagesByCategory[selectedMenuCategory].sales) + 1}%`} y="15" fill="#888" fontSize="9">Média Vendas ({averagesByCategory[selectedMenuCategory].sales.toFixed(1)})</text>
+                      <text x="5" y={`${getY(averagesByCategory[selectedMenuCategory].margin) - 5}%`} fill="#888" fontSize="9">Média Margem (R${averagesByCategory[selectedMenuCategory].margin.toFixed(2)})</text>
+                  </>
+              ) : (
+                  // If 'Todas' is selected, we can't draw one crosshair line reliably, as each item has its own center.
+                  // We could draw global average or nothing. Standard is nothing for multiple distinct sets.
+                  <text x="10" y="20" fill="#555" fontSize="10">Selecione uma categoria para visualizar as médias (crosshairs).</text>
+              )}
               
               {/* Axis Labels (max values) and Ticks */}
               {/* X Axis Ticks */}
@@ -256,7 +308,7 @@ const MatrizPreco = () => {
               ))}
 
               {/* Data Points */}
-              {classifiedItems.map((item) => {
+              {filteredItemsForDisplay.map((item) => {
                  const isHovered = hoveredItem === item.id;
                  const isActive = !activeCategory || activeCategory === item.type;
                  

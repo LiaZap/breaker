@@ -30,7 +30,11 @@ const DashboardHeader = ({ data }) => {
         <div className="flex items-center gap-3 md:gap-4 border-l border-[#333] pl-3 md:pl-6">
           <div className="flex items-center gap-[8px]">
             <div className="w-[36px] h-[36px] md:w-[40px] md:h-[40px] rounded-full bg-[#FDD688] flex items-center justify-center overflow-hidden">
-               <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.name)}&background=FDD688&color=000`} alt={data.user.initials} className="w-full h-full object-cover" />
+               {data.user?.name ? (
+                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.name)}&background=FDD688&color=000&size=100`} alt={data.user.initials} className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+               ) : (
+                 <span className="text-black font-bold text-[14px]">{data.user?.initials || 'U'}</span>
+               )}
             </div>
             <div className="hidden sm:flex flex-col">
               <span className="font-medium text-[12px] text-[#CACACA]">{data.user.name}</span>

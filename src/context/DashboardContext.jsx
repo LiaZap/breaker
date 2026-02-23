@@ -26,7 +26,11 @@ export const DashboardProvider = ({ children }) => {
     menuEngineering: [],
     cards: {
         moneyOnTable: { total: "0", lost: "0", recovered: "0", percentage: "0%" },
-        technicalSheets: [],
+        technicalSheets: [
+            { label: 'CMV real', value: '0%' },
+            { label: 'Fichas Desatualizadas', value: '0' },
+            { label: 'Produtos Sem Ficha', value: '0' }
+        ],
         costStructure: { total: "0", percentage: "0%", breakdown: [] }
     },
     tips: []
@@ -47,12 +51,25 @@ export const DashboardProvider = ({ children }) => {
           return res.json();
         })
         .then(data => {
-          setDashboardData(prev => ({ ...prev, ...data }));
+          setDashboardData(prev => {
+            const merged = { ...prev, ...data };
+            // Enforce that technicalSheets uses the new layout scheme even if DB has old 4 items.
+            // Since Dashboard computes this dynamically based on operational data, we can reset it.
+            if (merged.cards) {
+              const dbTs = merged.cards.technicalSheets || [];
+              const getVal = (labelMatch) => dbTs.find(t => t.label?.includes(labelMatch))?.value || '0';
+              
+              merged.cards.technicalSheets = [
+                { label: 'CMV real', value: getVal('CMV real') || getVal('CMV Global') },
+                { label: 'Fichas Desatualizadas', value: getVal('Desatualizadas') },
+                { label: 'Produtos Sem Ficha', value: getVal('Sem Ficha') }
+              ];
+            }
+            return merged;
+          });
         })
         .catch(err => {
           console.error("Failed to load client data from API", err);
-          // Fallback to LocalStorage could be kept here if offline support is needed, 
-          // but for now we strictly switch to Backend.
         });
     }
   }, []);
@@ -257,7 +274,26 @@ export const DashboardProvider = ({ children }) => {
     const totalFixedCosts = fixedCosts + personnelCosts;
 
     // Default variable costs to 35% of Revenue for simulation if real data is missing
-    const variableCosts = currentRevenue * 0.35;
+    let cmvPercentage = 0.35;
+    
+    // If we have actual menu engineering data, we can calculate the real overall CMV %
+    // by summing (sales * cost) and dividing by (sales * price)
+    if (dashboardData.menuEngineering && dashboardData.menuEngineering.length > 0) {
+        let totalSalesRevenue = 0;
+        let totalSalesCost = 0;
+        dashboardData.menuEngineering.forEach(item => {
+            const sales = parseFloat(String(item.sales).replace(',', '.')) || 0;
+            const price = parseCurrency(item.price);
+            const cost = parseCurrency(item.cost);
+            totalSalesRevenue += sales * price;
+            totalSalesCost += sales * cost;
+        });
+        if (totalSalesRevenue > 0) {
+            cmvPercentage = totalSalesCost / totalSalesRevenue;
+        }
+    }
+
+    const variableCosts = currentRevenue * cmvPercentage;
 
     // 2. METRICS CALCULATIONS
     
@@ -310,7 +346,7 @@ export const DashboardProvider = ({ children }) => {
                 {
                     label: "Custos Variáveis Estimados",
                     value: `R$ ${formatMoney(variableCosts)}`,
-                    percentage: "35%", // simulated
+                    percentage: `${(cmvPercentage * 100).toFixed(1)}%`,
                     status: "neutral",
                     icon: "pie"
                 }
@@ -340,10 +376,9 @@ export const DashboardProvider = ({ children }) => {
                 percentage: marginPercentage < 20 && currentRevenue > 0 ? Math.round(((0.20 - (profit/currentRevenue)) / 0.20) * 100) + "%" : "0%"
             },
             technicalSheets: [
-                { label: 'CMV Teórico', value: '35%' }, 
+                { label: 'CMV real', value: `${(cmvPercentage * 100).toFixed(0)}%` },
                 { label: 'Fichas Desatualizadas', value: '0' },
                 { label: 'Produtos Sem Ficha', value: '0' },
-                { label: 'CMV real', value: '35%' }
             ],
             costStructure: {
                 total: formatMoney(totalCosts),
