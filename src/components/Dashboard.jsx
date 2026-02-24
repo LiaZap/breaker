@@ -40,8 +40,9 @@ const Dashboard = () => {
         </div>
       ) : (
       <>
-      {/* MAIN CONTENT - Black background section */}
-      <div className="ml-0 md:ml-[85px] py-2 pb-6 bg-[#101010]">
+      {/* MAIN CONTENT - Full-width black background */}
+      <div className="w-full bg-[#101010]">
+      <div className="ml-0 md:ml-[85px] py-2 pb-6">
         <div className="w-full px-3 md:px-6 2xl:px-10 flex flex-col min-h-0">
         
         <DashboardHeader data={dashboardData} />
@@ -166,6 +167,7 @@ const Dashboard = () => {
           {/* COL 4 - Comparativo de mercado (REMOVED) */}
         </div>
         </div>
+      </div>
       </div>
 
       {/* BOTTOM ROW - Cards (full-width bg) */}
