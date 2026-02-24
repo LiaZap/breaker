@@ -1021,8 +1021,8 @@ const FichaTecnica = () => {
   };
 
   const handleDownloadTemplate = () => {
-    const header = "Nome,Categoria,Rendimento,Unidade,Custo\n";
-    const example = "Exemplo Insumo,Proteínas,200,gr,10.00\n";
+    const header = "Nome;Categoria;Rendimento;Unidade;Custo\n";
+    const example = "Exemplo Insumo;Proteínas;200;gr;10.00\n";
     const blob = new Blob([header + example], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     if (link.download !== undefined) {
@@ -1049,7 +1049,9 @@ const FichaTecnica = () => {
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i].trim();
             if (!line) continue;
-            const cols = line.split(',');
+            // Handle both comma and semicolon separators for flexibility
+            const separator = line.includes(';') ? ';' : ',';
+            const cols = line.split(separator);
             if (cols.length >= 5) {
                 newItems.push({
                     id: `imp_${Date.now()}_${i}`,

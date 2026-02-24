@@ -8,8 +8,8 @@ const EngenhariaMenu = () => {
   const [uploadStatus, setUploadStatus] = useState('idle'); // idle, uploading, success, error
 
   const handleDownload = () => {
-    // Create a dummy CSV content
-    const csvContent = "data:text/csv;charset=utf-8,Nome,Preço,Custo,Vendas,Categoria\nPrato Exemplo,50.00,15.00,100,Pratos Principais";
+    // Create CSV content using semicolons for better PT-BR Excel compatibility
+    const csvContent = "data:text/csv;charset=utf-8,Nome;Preço;Custo;Vendas;Categoria\nPrato Exemplo;50.00;15.00;100;Pratos Principais";
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
