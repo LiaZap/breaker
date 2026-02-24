@@ -276,9 +276,11 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                                 onChange={(val) => handleCompositeChange(question.id, field.id, val, field.type)}
                             />
                         ) : field.type === 'file' ? (
-                            <div className="flex items-center gap-4 mt-2">
-                                <label className="cursor-pointer flex items-center justify-center bg-[#2A2A2A] border border-[#333] hover:border-[#FFC100] text-white text-sm px-4 py-2 rounded transition-colors flex-1">
-                                    <span>{formData[question.id]?.[field.id] ? "Alterar Imagem" : field.placeholder}</span>
+                            <div className="flex items-center justify-between border-b border-[#333333] hover:border-[#FFC100] transition-colors pb-2">
+                                <label className="cursor-pointer flex items-center flex-1 text-[18px] text-[rgba(255,255,255,0.9)] font-['Plus_Jakarta_Sans'] font-medium">
+                                    <span className="opacity-70 hover:opacity-100 transition-opacity">
+                                        {formData[question.id]?.[field.id] ? "Alterar Imagem Anexada" : field.placeholder}
+                                    </span>
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -296,7 +298,7 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                                     />
                                 </label>
                                 {formData[question.id]?.[field.id] && (
-                                    <div className="w-10 h-10 rounded-full bg-[#1A1A1A] overflow-hidden border border-[#333] shrink-0">
+                                    <div className="w-8 h-8 rounded-full bg-[#1A1A1A] overflow-hidden border border-[#333] shrink-0 ml-4">
                                         <img src={formData[question.id]?.[field.id]} alt="Preview" className="w-full h-full object-cover" />
                                     </div>
                                 )}
