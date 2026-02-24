@@ -46,8 +46,7 @@ const MatrizPreco = () => {
   // Let's rely on dashboardData.menuEngineering. If it's empty, the user will see an empty chart, prompting them to upload.
   // But wait, the user currently sees the mock data and wants to see REAL data.
   // I will check if there is data.
-  const realItems = dashboardData.menuEngineering || [];
-  const displayItems = realItems.length > 0 ? realItems : initialItems; 
+  const displayItems = dashboardData.menuEngineering || []; 
 
   // Helper to parse currency safely
   const parseCurrency = (val) => {
