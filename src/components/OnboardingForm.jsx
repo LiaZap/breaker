@@ -244,6 +244,16 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                       const dependencyValue = formData[question.id]?.[field.dependsOn];
                       if (dependencyValue !== field.dependsValue) return null;
                   }
+                  if (field.dependsOnGlobal) {
+                      const [depQ, depF] = field.dependsOnGlobal.split('.');
+                      const dependencyValue = formData[depQ]?.[depF];
+                      if (dependencyValue !== field.dependsValue) return null;
+                  }
+                  if (field.hideIfGlobal) {
+                      const [depQ, depF] = field.hideIfGlobal.field.split('.');
+                      const dependencyValue = formData[depQ]?.[depF];
+                      if (dependencyValue === field.hideIfGlobal.value) return null;
+                  }
 
                   return (
                     <div key={field.id}>

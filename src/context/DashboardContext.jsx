@@ -205,7 +205,10 @@ export const DashboardProvider = ({ children }) => {
     sumComposite('operational_fixed', ['kitchen_gas', 'kitchen_oil']);
     
     // Admin Systems
-    sumComposite('admin_systems', ['software_pdv', 'accountant', 'taxes_das', 'card_machine_rent']);
+    sumComposite('admin_systems', ['software_pdv', 'accountant', 'card_machine_rent']);
+    if (formData.identity?.is_mei === 'Sim') {
+        sumComposite('admin_systems', ['taxes_das']);
+    }
     
     // Marketing
     sumComposite('marketing_structure', ['agency', 'ads_budget']);
@@ -303,9 +306,44 @@ export const DashboardProvider = ({ children }) => {
 
     // 2. METRICS CALCULATIONS
     
-    const totalCosts = totalFixedCosts + variableCosts;
+    // ======= TAX CALCULATIONS (Simples Nacional vs Outros) ========
+    let percentTaxSimples = 0;
+    let taxCostSimples = 0;
+    
+    if (formData.identity?.tax_regime === 'Simples Nacional' && formData.identity?.is_mei !== 'Sim') {
+        const userProvidedRate = formData.admin_systems?.simples_rate;
+        // If user typed '4,5', clean formatting
+        const cleanRate = userProvidedRate ? parseFloat(userProvidedRate.toString().replace(',', '.')) : 0;
+        
+        if (cleanRate > 0) {
+            percentTaxSimples = cleanRate / 100;
+        } else {
+            // Auto calculate based on Anexo I (Comércio) using annualized history (RBT12)
+            const activeMonths = revenueHistory.filter(v => v > 0);
+            const avgMonthlyRevenue = activeMonths.length > 0 ? (totalAnnualRevenue / activeMonths.length) : 0;
+            const rbt12 = avgMonthlyRevenue * 12; // Annualize observed revenue for RBT12 table
+            
+            if (rbt12 <= 180000) {
+                percentTaxSimples = 0.04;
+            } else if (rbt12 <= 360000) {
+                percentTaxSimples = ((rbt12 * 0.073) - 5940) / rbt12;
+            } else if (rbt12 <= 720000) {
+                percentTaxSimples = ((rbt12 * 0.095) - 13860) / rbt12;
+            } else if (rbt12 <= 1800000) {
+                percentTaxSimples = ((rbt12 * 0.107) - 22500) / rbt12;
+            } else if (rbt12 <= 3600000) {
+                percentTaxSimples = ((rbt12 * 0.143) - 87300) / rbt12;
+            } else if (rbt12 > 0) {
+                percentTaxSimples = ((rbt12 * 0.19) - 378000) / rbt12;
+            }
+        }
+        taxCostSimples = currentRevenue * percentTaxSimples;
+    }
+
+    const totalCosts = totalFixedCosts + variableCosts + taxCostSimples;
     const profit = currentRevenue - totalCosts;
-    const contributionMargin = currentRevenue - variableCosts; // Revenue - Variable
+    // Contribution Margin = Revenue - All Variable Costs (CMV + Variables + Variable Taxes)
+    const contributionMargin = currentRevenue - variableCosts - taxCostSimples; 
     const marginPercentage = currentRevenue > 0 ? (profit / currentRevenue) * 100 : 0;
     
     // Break Even Point (Ponto de Equilíbrio)

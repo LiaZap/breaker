@@ -153,12 +153,13 @@ export const onboardingQuestions = [
     id: 'admin_systems',
     section: 'Ativos e Inteligência',
     title: 'Sistemas e Adm.',
-    description: 'Softwares e serviços administrativos.',
+    description: 'Softwares, serviços e impostos.',
     type: 'composite',
     fields: [
         { id: 'software_pdv', label: 'Software PDV', type: 'currency', placeholder: 'R$ 0,00' },
         { id: 'accountant', label: 'Contador', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'taxes_das', label: 'Imposto Fixo (MEI/DAS)', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'taxes_das', label: 'Imposto Fixo (MEI/DAS)', type: 'currency', placeholder: 'R$ 0,00', dependsOnGlobal: 'identity.is_mei', dependsValue: 'Sim' },
+        { id: 'simples_rate', label: 'Alíquota Simples Nacional (%)', type: 'text', placeholder: 'Automático (Via Fat. Anual)', helpText: 'Alíquota efetiva (Anexo I). O sistema fará o cálculo dinâmico baseado no seu histórico de Vendas (Etapa 14).', dependsOnGlobal: 'identity.tax_regime', dependsValue: 'Simples Nacional', hideIfGlobal: { field: 'identity.is_mei', value: 'Sim' } },
         { id: 'card_machine_rent', label: 'Aluguel Maquininha', type: 'currency', placeholder: 'R$ 0,00' }
     ]
   },
