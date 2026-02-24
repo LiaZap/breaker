@@ -21,27 +21,8 @@ const Dashboard = () => {
   const { dashboardData } = useDashboard();
   const [activePage, setActivePage] = useState('home');
 
-  // Dynamic zoom: scale everything proportionally based on viewport width
-  // Reference: 1920px = 100% zoom. 4K (3840px) = 200%, 1440px = 75%, etc.
-  const [zoomLevel, setZoomLevel] = useState(1);
-  
-  React.useEffect(() => {
-    const calcZoom = () => {
-      const vw = window.innerWidth;
-      // Clamp between 0.7 (very small screens) and 2.5 (ultra-large 4K+)
-      const zoom = Math.min(Math.max(vw / 1920, 0.7), 2.5);
-      setZoomLevel(zoom);
-    };
-    calcZoom();
-    window.addEventListener('resize', calcZoom);
-    return () => window.removeEventListener('resize', calcZoom);
-  }, []);
-
   return (
-    <div 
-      className="relative w-full h-screen bg-[#101010] font-jakarta text-white select-none flex flex-col overflow-x-hidden overflow-y-auto"
-      style={{ zoom: zoomLevel }}
-    >
+    <div className="relative w-full min-h-screen bg-[#1B1B1D] font-jakarta text-white select-none overflow-x-hidden overflow-y-auto">
       
       <Sidebar activePage={activePage} onNavigate={setActivePage} />
 
@@ -58,9 +39,9 @@ const Dashboard = () => {
           <EngenhariaMenu />
         </div>
       ) : (
-      <div className="flex flex-col flex-1 min-h-0">
-      {/* MAIN CONTENT */}
-      <div className="ml-0 md:ml-[85px] py-2 pb-6">
+      <>
+      {/* MAIN CONTENT - Black background section */}
+      <div className="ml-0 md:ml-[85px] py-2 pb-6 bg-[#101010]">
         <div className="w-full px-3 md:px-6 2xl:px-10 flex flex-col min-h-0">
         
         <DashboardHeader data={dashboardData} />
@@ -188,7 +169,7 @@ const Dashboard = () => {
       </div>
 
       {/* BOTTOM ROW - Cards (full-width bg) */}
-      <div className="bg-[#1B1B1D] pl-3 md:pl-[85px] pr-3 md:pr-6 py-6 w-full flex-1">
+      <div className="pl-3 md:pl-[85px] pr-3 md:pr-6 py-6 w-full">
         <div className="w-full px-3 md:px-0 2xl:px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             <MoneyOnTable data={dashboardData.cards.moneyOnTable} />
@@ -197,7 +178,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-      </div>
+      </>
       )}
     </div>
   );
