@@ -270,7 +270,7 @@ const MatrizPreco = () => {
         {/* CHART AREA */}
         <div className="flex-1 relative w-full h-full min-h-[300px]">
           {/* Y-Axis Label (outside chart area) */}
-          <div className="absolute left-[10px] top-1/2 -translate-y-1/2 -rotate-90 text-[10px] text-[#868686] font-medium tracking-wide whitespace-nowrap text-center" style={{ transformOrigin: 'center center' }}>
+          <div className="absolute left-[20px] top-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-90 text-[10px] text-[#868686] font-medium tracking-wide whitespace-nowrap text-center" style={{ transformOrigin: 'center center' }}>
              Margem (R$)
              <span className="block text-[8px] font-normal text-[#555]">Quanto este produto gera de margem</span>
           </div>
