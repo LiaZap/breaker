@@ -12,7 +12,7 @@ export const onboardingQuestions = [
     type: 'composite',
     fields: [
       { id: 'restaurant_name', label: 'Nome do Restaurante', type: 'text', placeholder: 'Ex: Terra e Mar 360' },
-      { id: 'cuisine_type', label: 'Tipo de Culinária', type: 'autocomplete', placeholder: 'Ex: Italiana, Japonesa...', options: ['Italiana', 'Japonesa', 'Brasileira', 'Contemporânea', 'Fast Food', 'Pizzaria', 'Hamburgueria', 'Asiática', 'Árabe', 'Mexicana', 'Vegetariana/Vegana', 'Cafeteria', 'Doceria/Confeitaria', 'Padaria', 'Bar/Pub', 'Steakhouse/Churrascaria', 'Frutos do Mar', 'Bistrô', 'Buffet', 'Outros'] },
+      { id: 'cuisine_type', label: 'Tipo de Negócio', type: 'autocomplete', placeholder: 'Ex: Italiana, Japonesa...', options: ['Italiana', 'Japonesa', 'Brasileira', 'Contemporânea', 'Fast Food', 'Pizzaria', 'Hamburgueria', 'Asiática', 'Árabe', 'Mexicana', 'Vegetariana/Vegana', 'Cafeteria', 'Doceria/Confeitaria', 'Padaria', 'Bar/Pub', 'Steakhouse/Churrascaria', 'Frutos do Mar', 'Bistrô', 'Buffet', 'Outros'] },
       { id: 'tax_regime', label: 'Regime Tributário', type: 'select', options: ['Simples Nacional', 'Lucro Presumido', 'Lucro Real'] },
       // Logic for MEI will be handled in form if Simples is selected
       { id: 'is_mei', label: 'É MEI?', type: 'select', options: ['Não', 'Sim'], hidden: true, dependsOn: 'tax_regime', dependsValue: 'Simples Nacional' } 
