@@ -275,6 +275,32 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                                 value={formData[question.id]?.[field.id] || ''}
                                 onChange={(val) => handleCompositeChange(question.id, field.id, val, field.type)}
                             />
+                        ) : field.type === 'file' ? (
+                            <div className="flex items-center gap-4 mt-2">
+                                <label className="cursor-pointer flex items-center justify-center bg-[#2A2A2A] border border-[#333] hover:border-[#FFC100] text-white text-sm px-4 py-2 rounded transition-colors flex-1">
+                                    <span>{formData[question.id]?.[field.id] ? "Alterar Imagem" : field.placeholder}</span>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    handleCompositeChange(question.id, field.id, reader.result, field.type);
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                    />
+                                </label>
+                                {formData[question.id]?.[field.id] && (
+                                    <div className="w-10 h-10 rounded-full bg-[#1A1A1A] overflow-hidden border border-[#333] shrink-0">
+                                        <img src={formData[question.id]?.[field.id]} alt="Preview" className="w-full h-full object-cover" />
+                                    </div>
+                                )}
+                            </div>
                         ) : (
                             <input
                                 type="text"
