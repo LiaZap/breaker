@@ -1,7 +1,17 @@
 const xlsx = require('xlsx');
 
-const parseMenuExcel = (buffer) => {
-  const workbook = xlsx.read(buffer, { type: 'buffer' });
+const parseMenuExcel = (buffer, originalname = '') => {
+  let workbook;
+  
+  // If we know it's a CSV, parse it as a UTF-8 string to preserve special characters (ç, ã, etc.)
+  if (originalname.toLowerCase().endsWith('.csv')) {
+      const csvString = buffer.toString('utf8');
+      workbook = xlsx.read(csvString, { type: 'string' });
+  } else {
+      // For binary Excel files (.xlsx, .xls)
+      workbook = xlsx.read(buffer, { type: 'buffer' });
+  }
+
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
   const data = xlsx.utils.sheet_to_json(worksheet, { defval: "" }); // defval ensures empty cells are string

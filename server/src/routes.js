@@ -133,7 +133,7 @@ router.post('/menu/upload', upload.single('file'), (req, res) => {
       return res.status(400).json({ error: 'Nenhum arquivo enviado' });
     }
 
-    const insumos = parseMenuExcel(req.file.buffer);
+    const insumos = parseMenuExcel(req.file.buffer, req.file.originalname);
     res.json(insumos);
   } catch (error) {
     console.error(error);
