@@ -442,9 +442,16 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                         <div className="grid grid-cols-2 gap-4">
                             {question.fields.map(field => (
                                 <div key={field.id} className={field.id === 'name' ? 'col-span-2' : ''}>
-                                    <label className="text-[10px] text-gray-400 mb-1 flex justify-between">
+                                    <label className="text-[10px] text-gray-400 mb-1 flex justify-between items-center relative z-10">
                                         {field.label}
-                                        {field.helpText && <span className="text-white/50 cursor-pointer" title={field.helpText}>(?)</span>}
+                                        {field.helpText && (
+                                            <div className="group relative flex items-center">
+                                                <span className="text-white/50 cursor-pointer hover:text-white transition-colors">(?)</span>
+                                                <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block w-48 p-2 bg-[#333] border border-[#444] text-white text-[10px] rounded shadow-xl z-50 text-right pointer-events-none">
+                                                    {field.helpText}
+                                                </div>
+                                            </div>
+                                        )}
                                     </label>
                                     
                                     {field.type === 'select' ? (
