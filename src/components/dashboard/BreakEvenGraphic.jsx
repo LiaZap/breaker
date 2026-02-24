@@ -2,9 +2,7 @@ import React from 'react';
 
 const BreakEvenGraphic = ({ 
   percentage = 0, 
-  value = "R$ 0,00",
-  currentRevenue = 0, /* Numeric value for relative scaling if needed */
-  target = 0
+  value = "R$ 0,00"
 }) => {
   // Clamp percentage between 0 and 100 for the bar
   const safePercentage = Math.min(Math.max(percentage, 0), 100);
@@ -34,8 +32,6 @@ const BreakEvenGraphic = ({
 
   // Background Arc (Full 180: -180 to 0)
   const startAngle = -180;
-  const endAngle = 0;
-  
   // Foreground Arc equivalent to percentage
   const progressAngle = startAngle + (safePercentage / 100) * 180;
 

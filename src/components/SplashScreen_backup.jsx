@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import logoImg from '../assets/logo.png'; // Assuming the user will provide this
@@ -6,7 +7,7 @@ const SplashScreen = () => {
   const [imageError, setImageError] = useState(false);
 
   return (
-    <div className="relative w-full h-screen bg-[#111111] overflow-hidden flex flex-col items-center justify-center">
+    <div className="relative w-full h-screen bg-background overflow-hidden flex flex-col items-center justify-center">
       {/* Background Vectors */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
          {/* Abstract glow to mimic the 'Vector 1' lighting effect */}

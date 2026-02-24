@@ -5,7 +5,6 @@ const FinanceOverview = ({ data }) => {
   const [hoveredMonth, setHoveredMonth] = useState(null);
 
   const history = data.history || [];
-  const currentMonthIndex = new Date().getMonth();
   
   // Helper to format currency
   const formatVal = (val) => val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -13,9 +12,6 @@ const FinanceOverview = ({ data }) => {
   // Determine what to show
   // If hovering, show hovered data (optional, maybe just tooltip). 
   // User asked: "passar o mouse saber ... ou clicar saber".
-  // Let's stick to: Click updates the main view. Hover shows tooltip.
-  
-  const activeIndex = selectedMonth !== null ? selectedMonth : history.findIndex(h => h > 0 && formatVal(h) === data.total);
   // Fallback: if data.total logic is complex, just use data.total/data.month as default unless selectedMonth is set.
 
   const displayValue = selectedMonth !== null ? formatVal(history[selectedMonth]) : data.total;

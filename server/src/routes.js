@@ -53,7 +53,7 @@ router.get('/admin/clients', async (req, res) => {
       select: { id: true, name: true, hash: true, createdAt: true }
     });
     res.json(clients);
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Erro ao listar clientes' });
   }
 });
@@ -87,7 +87,7 @@ router.get('/client/:hash', async (req, res) => {
     if (!client) return res.status(404).json({ error: 'Cliente não encontrado' });
 
     res.json(JSON.parse(client.data));
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Erro ao carregar dados' });
   }
 });

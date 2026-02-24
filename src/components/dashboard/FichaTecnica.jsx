@@ -1,6 +1,15 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { useState } from 'react';
 
 // ============ DATA ============
+export const parseSafeNumber = (val) => {
+    if (typeof val === 'number') return val;
+    if (!val && val !== 0) return 0;
+    let str = String(val).replace(/R\$/g, '').trim();
+    if (str.includes(',') && str.includes('.')) str = str.replace(/\./g, '').replace(',', '.');
+    else if (str.includes(',')) str = str.replace(',', '.');
+    return parseFloat(str) || 0;
+};
 // Constants moved to DashboardContext
 
 
@@ -132,19 +141,17 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
   const categoryOptions = dashboardData.operational?.categories?.insumos || ['Proteínas', 'Grãos', 'Vinhos', 'Molhos', 'Legumes', 'Temperos', 'Óleos', 'Laticínios', 'Outros'];
 
   // Calculations
-  const parseNum = (val) => parseFloat(String(val).replace(',', '.')) || 0;
-  const pb = parseNum(pesoBrutoQty);
-  const pl = parseNum(pesoLiquidoQty);
+  const pb = parseSafeNumber(pesoBrutoQty);
+  const pl = parseSafeNumber(pesoLiquidoQty);
   
   const fc = pl > 0 && typeof pb === 'number' ? (pb / pl).toFixed(2) : '1.00';
   const rendimentoPerc = pb > 0 ? Math.round((pl / pb) * 100) : 100;
 
   // Custo Líquido Calculation
-  const numericCusto = parseFloat(custo.replace(',', '.')) || 0;
+  const numericCusto = parseSafeNumber(custo);
   // If we buy PB amount for `numericCusto`, the price per unit of PB is (numericCusto / pb).
   // But we only get PL amount of usable product for that same `numericCusto`.
   // So the effective price per unit of PL (Custo Líquido) is (numericCusto / pl).
-  const unitPricePB = pb > 0 ? (numericCusto / pb) : 0;
   const unitPricePL = pl > 0 ? (numericCusto / pl) : 0;
   
   // Alternative way to think: Custo Líquido = Custo Bruto * FC
@@ -333,27 +340,13 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
 
 
 
-// ============ Available insumos pool ============
-const availableInsumosPool = [
-  { id: 'a1', name: 'Filé de Frango', category: 'Proteínas', defaultQty: '200', unit: 'gr', price: '10,00' },
-  { id: 'a2', name: 'Arroz Branco', category: 'Grãos', defaultQty: '150', unit: 'gr', price: '3,50' },
-  { id: 'a3', name: 'Feijão Preto', category: 'Grãos', defaultQty: '100', unit: 'gr', price: '4,20' },
-  { id: 'a4', name: 'Molho Madeira', category: 'Molhos', defaultQty: '80', unit: 'ml', price: '8,00' },
-  { id: 'a5', name: 'Batata Inglesa', category: 'Legumes', defaultQty: '200', unit: 'gr', price: '2,80' },
-  { id: 'a6', name: 'Cebola', category: 'Legumes', defaultQty: '50', unit: 'gr', price: '1,50' },
-  { id: 'a7', name: 'Alho', category: 'Temperos', defaultQty: '10', unit: 'gr', price: '0,80' },
-  { id: 'a8', name: 'Azeite de Oliva', category: 'Óleos', defaultQty: '15', unit: 'ml', price: '2,50' },
-  { id: 'a9', name: 'Sal', category: 'Temperos', defaultQty: '5', unit: 'gr', price: '0,10' },
-  { id: 'a10', name: 'Pimenta do Reino', category: 'Temperos', defaultQty: '3', unit: 'gr', price: '0,40' },
-  { id: 'a11', name: 'Manteiga', category: 'Laticínios', defaultQty: '20', unit: 'gr', price: '1,80' },
-  { id: 'a12', name: 'Queijo Parmesão', category: 'Laticínios', defaultQty: '30', unit: 'gr', price: '5,20' },
-];
+// Removed availableInsumosPool mock
 
 // ... (imports)
 import FichaTecnicaPrint from './FichaTecnicaPrint';
 
 // ============ MODAL: Criar/Editar Ficha Técnica ============
-const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => {
+const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave }) => {
   const isEditing = !!editingFicha;
   const { dashboardData } = useDashboard();
   
@@ -391,35 +384,23 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
   const [showNewInsumoForm, setShowNewInsumoForm] = useState(false);
   const [newInsumo, setNewInsumo] = useState({ name: '', category: insumoCategoryOptions[0], qty: '200', grossQty: '', unit: 'gr', price: '' });
 
+  const currentCustoTotalInsumos = addedInsumos.reduce((sum, i) => {
+      const totalPricePB = parseSafeNumber(i.price);
+      const pb = parseSafeNumber(i.grossQty || i.pesoBruto || i.defaultQty || 1) || 1;
+      const unitCost = totalPricePB / pb;
+      const requiredPL = parseSafeNumber(i.qty);
+      const fc = parseSafeNumber(i.fc) || 1;
+      return sum + (requiredPL * fc * unitCost);
+  }, 0);
+
   // Handlers
   const handleSave = () => {
     if (!nome.trim()) {
         alert("Preencha o nome da ficha.");
         return;
     }
-    const custoTotalInsumos = addedInsumos.reduce((sum, i) => {
-      // The insumo object has 'price' (Total Cost of PB), 'grossQty' (PB) and 'netQty'/'qty' (PL).
-      // Let's calculate the cost of the amount required by the Ficha (which is i.qty).
-      const totalPricePB = parseFloat(String(i.price).replace('R$','').replace(',', '.')) || 0;
-      
-      // If we know the PB, we can find the unit cost. Otherwise we fallback to the raw price.
-      const pb = parseFloat(String(i.grossQty || i.pesoBruto || i.defaultQty || 1).replace(',', '.')) || 1;
-      const unitCost = totalPricePB / pb; // cost per unit of PB
-      
-      // We also need the FC to know how much PB we need for the requested PL (i.qty).
-      // i.qty represents the requested PL (Net Qty) in the Ficha's ingredient list.
-      const requiredPL = parseFloat(String(i.qty).replace(',', '.')) || 0;
-      const fc = parseFloat(String(i.fc).replace(',', '.')) || 1;
-      
-      // The required amount of PB to get that PL is PL * FC.
-      const requiredPB = requiredPL * fc;
-      
-      // The actual cost is the amount of PB required * the cost per unit of PB.
-      const actualCost = requiredPB * unitCost;
-
-      return sum + actualCost;
-    }, 0);
-    const custoEmb = parseFloat(custoEmbalagem.replace(',', '.')) || 0;
+    const custoTotalInsumos = currentCustoTotalInsumos;
+    const custoEmb = parseSafeNumber(custoEmbalagem);
     
     const fichaData = {
       id: editingFicha ? editingFicha.id : Date.now().toString(),
@@ -434,7 +415,7 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
       custoTotal: `R$ ${(custoTotalInsumos + custoEmb).toFixed(2).replace('.', ',')}`,
       
       // Menu Engineering integration
-      precoVenda: `R$ ${(parseFloat(precoVenda.replace(',', '.')) || 0).toFixed(2).replace('.', ',')}`,
+      precoVenda: `R$ ${(parseSafeNumber(precoVenda) || 0).toFixed(2).replace('.', ',')}`,
       vendasMes: `${parseInt(vendasMes, 10) || 0}`,
       
       tempoPreparo,
@@ -472,9 +453,9 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
     if (!newInsumo.name.trim() || !newInsumo.price.trim()) return;
     
     // Parse values
-    const netQty = parseFloat(newInsumo.qty.replace(',', '.')) || 0;
-    const grossQty = parseFloat(newInsumo.grossQty?.replace(',', '.') || newInsumo.qty.replace(',', '.')) || netQty;
-    const unitPrice = parseFloat(newInsumo.price.replace('R$', '').replace(',', '.')) || 0;
+    const netQty = parseSafeNumber(newInsumo.qty);
+    const grossQty = parseSafeNumber(newInsumo.grossQty || newInsumo.qty) || netQty;
+    const unitPrice = parseSafeNumber(newInsumo.price);
     
     // Calculate FC
     const fc = netQty > 0 ? (grossQty / netQty).toFixed(2) : '1.00';
@@ -634,10 +615,10 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
                                   <span className="w-1 h-1 rounded-full bg-[#555]" />
                                   <span>FC: {insumo.fc || '1.00'}</span>
                                   <span className="w-1 h-1 rounded-full bg-[#555]" />
-                                  <span>PB req: {((parseFloat(String(insumo.qty).replace(',', '.')) || 0) * (parseFloat(String(insumo.fc).replace(',', '.')) || 1)).toFixed(1)}{insumo.unit}</span>
+                                  <span>PB req: {(parseSafeNumber(insumo.qty) * (parseSafeNumber(insumo.fc) || 1)).toFixed(1)}{insumo.unit}</span>
                                   <span className="w-1 h-1 rounded-full bg-[#555]" />
                                   <span className="text-[#00B37E]">
-                                    Cost: R$ {(((parseFloat(String(insumo.price).replace('R$','').replace(',', '.')) || 0) / (parseFloat(String(insumo.grossQty || insumo.pesoBruto || insumo.defaultQty || 1).replace(',', '.')) || 1)) * ((parseFloat(String(insumo.qty).replace(',', '.')) || 0) * (parseFloat(String(insumo.fc).replace(',', '.')) || 1))).toFixed(2)}
+                                    Cost: R$ {((parseSafeNumber(insumo.price) / (parseSafeNumber(insumo.grossQty || insumo.pesoBruto || insumo.defaultQty || 1) || 1)) * (parseSafeNumber(insumo.qty) * (parseSafeNumber(insumo.fc) || 1))).toFixed(2)}
                                   </span>
                               </div>
                             </div>
@@ -829,13 +810,13 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onDelete }) => 
                            </div>
                            
                            {/* Quick Margin Calculation Preview */}
-                           {parseFloat(precoVenda.replace(',', '.')) > 0 && (
+                           {parseSafeNumber(precoVenda) > 0 && (
                                <div className="mt-3 pt-3 border-t border-[#333] flex items-center justify-between">
                                   <div className="text-[11px] text-[#868686]">Lucro Bruto Estimado</div>
                                   <div className={`text-[12px] font-bold ${
-                                     (parseFloat(precoVenda.replace(',', '.')) - (custoTotalInsumos + (parseFloat(custoEmbalagem.replace(',', '.')) || 0))) > 0 ? 'text-[#00B37E]' : 'text-[#FF4560]'
+                                     (parseSafeNumber(precoVenda) - (currentCustoTotalInsumos + parseSafeNumber(custoEmbalagem))) > 0 ? 'text-[#00B37E]' : 'text-[#FF4560]'
                                   }`}>
-                                     R$ {(parseFloat(precoVenda.replace(',', '.')) - (custoTotalInsumos + (parseFloat(custoEmbalagem.replace(',', '.')) || 0))).toFixed(2).replace('.', ',')}
+                                     R$ {(parseSafeNumber(precoVenda) - (currentCustoTotalInsumos + parseSafeNumber(custoEmbalagem))).toFixed(2).replace('.', ',')}
                                   </div>
                                </div>
                            )}
@@ -964,17 +945,21 @@ const FichaTecnica = () => {
       newFichas = [...fichas, fichaData];
     }
     
-    // ======================================
-    // MENU ENGINEERING SYNC
-    // ======================================
-    const priceStr = String(fichaData.precoVenda || '0').replace('R$', '').trim().replace(',', '.');
-    const priceFloat = parseFloat(priceStr) || 0;
+    // Build update payload — only include menuEngineering if this ficha has pricing data
+    const updatePayload = {
+        operational: {
+            ...dashboardData.operational,
+            fichas: newFichas
+        }
+    };
     
-    let newMenuEngineering = [...(dashboardData.menuEngineering || [])];
+    // MENU ENGINEERING SYNC — only when ficha has pricing + sales data
+    const priceFloat = parseSafeNumber(fichaData.precoVenda);
     
     if (priceFloat > 0 && fichaData.vendasMes) {
+        const newMenuEngineering = [...(dashboardData.menuEngineering || [])];
         const menuData = {
-            id: `ft_${fichaData.id}`, // link prefix
+            id: `ft_${fichaData.id}`,
             name: fichaData.name,
             category: fichaData.type,
             sales: String(fichaData.vendasMes),
@@ -988,16 +973,10 @@ const FichaTecnica = () => {
         } else {
             newMenuEngineering.push(menuData);
         }
+        updatePayload.menuEngineering = newMenuEngineering;
     }
     
-    // Update Context
-    updateDashboardData({
-        operational: {
-            ...dashboardData.operational,
-            fichas: newFichas
-        },
-        menuEngineering: newMenuEngineering
-    });
+    updateDashboardData(updatePayload);
   };
 
   const handleSaveInsumo = (updatedInsumo) => {
@@ -1160,7 +1139,7 @@ const FichaTecnica = () => {
                 <div className="text-[12px] text-[#E0E0E0] font-medium mb-1">Custo Médio Embalagem</div>
                 <div className="text-[24px] font-bold text-white">
                   R$ {fichas.length > 0 
-                      ? (fichas.reduce((acc, f) => acc + (parseFloat(String(f.custoEmbalagem || '0').replace('R$', '').trim().replace(',', '.')) || 0), 0) / fichas.length).toFixed(2).replace('.', ',') 
+                      ? (fichas.reduce((acc, f) => acc + parseSafeNumber(f.custoEmbalagem), 0) / fichas.length).toFixed(2).replace('.', ',') 
                       : '0,00'}
                 </div>
                 <div className="text-[11px] text-[#A0A0A0]">Por Ficha Técnica (Média)</div>

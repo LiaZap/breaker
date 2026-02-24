@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect } from 'react';
 import SplashScreen from './components/SplashScreen';
 import LandingPage from './components/LandingPage';
@@ -9,7 +10,6 @@ import { useDashboard } from './context/DashboardContext';
 function App() {
   const { dashboardData } = useDashboard();
   const [currentPage, setCurrentPage] = useState('loading'); // loading, admin-login, admin-panel, splash, landing, dashboard
-  const [clientHash, setClientHash] = useState(null);
 
   useEffect(() => {
     // Check for hash in URL
@@ -17,7 +17,6 @@ function App() {
     const hash = params.get('hash');
 
     if (hash) {
-      setClientHash(hash);
       setCurrentPage('splash');
     } else {
       // Default to landing if no hash (development mode or new user)

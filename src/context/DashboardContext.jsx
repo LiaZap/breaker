@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useContext } from 'react';
 
 const DashboardContext = createContext();
@@ -76,9 +77,15 @@ export const DashboardProvider = ({ children }) => {
 
   // Helper to parse "R$ 1.234,56" -> 1234.56
   const parseCurrency = (value) => {
-    if (!value) return 0;
+    if (!value && value !== 0) return 0;
     if (typeof value === 'number') return value;
-    return parseFloat(value.replace(/[R$\s.]/g, '').replace(',', '.')) || 0;
+    let str = String(value).replace(/R\$/g, '').trim();
+    if (str.includes(',') && str.includes('.')) {
+        str = str.replace(/\./g, '').replace(',', '.');
+    } else if (str.includes(',')) {
+        str = str.replace(',', '.');
+    }
+    return parseFloat(str) || 0;
   };
 
   // Helper to format 1234.56 -> "1.234,56"
@@ -87,7 +94,6 @@ export const DashboardProvider = ({ children }) => {
   };
 
   const updateDashboardData = (newData) => {
-    console.log("Updating Dashboard with:", newData);
 
     // Determines if it is Form Data (flat object) or Partial Update (nested object)
     // If it has 'operational', assume it's a direct state update
@@ -306,8 +312,6 @@ export const DashboardProvider = ({ children }) => {
     // BEP = Fixed Costs / Marge Contribution Percentage
     const contributionMarginPercentage = currentRevenue > 0 ? (contributionMargin / currentRevenue) : 0;
     const breakEvenValue = contributionMarginPercentage > 0 ? totalFixedCosts / contributionMarginPercentage : 0;
-    const breakEvenPercentage = breakEvenValue > 0 ? (currentRevenue / breakEvenValue) * 100 : 0; // Show how far along they are
-
     // 3. CONSTRUCT DASHBOARD OBJECT
     const newDashboardData = {
         ...initialData,

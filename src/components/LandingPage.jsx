@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import boltIcon from '../assets/bolt.svg';
@@ -13,7 +14,7 @@ const LandingPage = ({ onComplete }) => {
   const { restaurant, user } = dashboardData;
 
   return (
-    <div className="relative w-full min-h-screen bg-[#111111] font-jakarta text-white select-none overflow-hidden">
+    <div className="relative w-full min-h-screen bg-background font-jakarta text-white select-none overflow-hidden">
       
       {/* Dark Overlay when form is open */}
       <AnimatePresence>
@@ -83,7 +84,7 @@ const LandingPage = ({ onComplete }) => {
         <div className="flex items-start gap-8 max-w-[1400px] mx-auto">
           
           {/* LEFT COLUMN - Fixed width */}
-          <div className="flex-shrink-0 w-[320px]">
+          <div className="shrink-0 w-[320px]">
             {/* Circles Row */}
             <div className="flex items-center gap-[22px] mb-[25px]">
               {/* Yellow Circle */}
@@ -134,7 +135,7 @@ const LandingPage = ({ onComplete }) => {
 
           {/* CENTER - Video Card */}
           <div 
-            className="flex-shrink-0 w-[346px] h-[529px] bg-black rounded-[14px] relative overflow-hidden"
+            className="shrink-0 w-[346px] h-[529px] bg-black rounded-[14px] relative overflow-hidden"
           >
             {/* Play Button */}
             <div className="absolute inset-0 flex items-center justify-center">
@@ -158,7 +159,7 @@ const LandingPage = ({ onComplete }) => {
           </div>
 
           {/* RIGHT - Cards Container */}
-          <div className="relative flex-shrink-0">
+          <div className="relative shrink-0">
             {/* Main Card */}
             <div 
               className="w-[349px] h-[506px] bg-[#1D1D1D] rounded-[10px] relative cursor-pointer hover:bg-[#252525] transition-colors"

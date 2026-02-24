@@ -15,9 +15,7 @@ const AdminPanel = () => {
       .catch(err => console.error("Failed to fetch clients", err));
   }, []);
 
-  const generateHash = () => {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  };
+  // Removed unused generateHash
 
   const handleCreateClient = () => {
     if (!newClientName.trim()) return;
@@ -33,7 +31,7 @@ const AdminPanel = () => {
       setNewClientName('');
       setShowModal(false);
     })
-    .catch(err => alert("Erro ao criar cliente"));
+    .catch(() => alert("Erro ao criar cliente"));
   };
 
   const copyLink = (hash) => {

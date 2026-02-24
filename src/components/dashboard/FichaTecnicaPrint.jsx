@@ -4,7 +4,7 @@ const FichaTecnicaPrint = ({ data }) => {
   if (!data) return null;
 
   return (
-    <div className="hidden print:block fixed inset-0 z-[9999] bg-white text-black p-8 overflow-y-auto">
+    <div className="hidden print:block fixed inset-0 z-9999 bg-white text-black p-8 overflow-y-auto">
       {/* CSS to hide headers/footers in print and reset styles */}
       <style>{`
         @media print {

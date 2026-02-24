@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import logoImg from '../assets/logo.png';
@@ -71,7 +72,7 @@ const SplashScreen = ({ onComplete }) => {
 
         {/* Main Content Group */}
         <div className="relative flex flex-col items-center justify-center w-full h-full">
-            <div className="relative flex items-center justify-center gap-[0px]"> {/* Gap 0 as per calculation */}
+            <div className="relative flex items-center justify-center gap-0"> {/* Gap 0 as per calculation */}
                 {/* Vector 1 (SVG for infinite scaling) */}
                 <motion.svg 
                   viewBox="0 0 32 34" 

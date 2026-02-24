@@ -6,7 +6,6 @@ const parseMenuExcel = (buffer) => {
   const worksheet = workbook.Sheets[sheetName];
   const data = xlsx.utils.sheet_to_json(worksheet, { defval: "" }); // defval ensures empty cells are string
 
-  console.log("Parsed Excel Data (First Row):", data[0]);
 
   // Transform data to our Menu Engineering format
   // Expected Excel columns: Nome, Vendas, Preço, Custo, Categoria
@@ -54,7 +53,6 @@ const parseMenuExcel = (buffer) => {
     };
   });
   
-  console.log("Processed Menu Items (First 2):", menuItems.slice(0, 2));
 
   return menuItems;
 };

@@ -36,30 +36,10 @@ const EngenhariaMenu = () => {
         return res.json();
       })
       .then(insumos => {
-        // Update Dashboard Context with new Insumos
-        // Merge with existing or replace? For now, let's append or replace.
-        // Let's assume replace for "Import" flow, or we could append.
-        // Based on user persona, "Import" usually means "Here is my data".
-        
-        // We will append to existing insumos to be safe, or replacing if empty.
-        // Actually, the prompt says "return processed JSON to Populate Insumos", so maybe replace/merge.
-        // Let's merge: add new ones.
-        
-        const currentInsumos = dashboardData.operational?.insumos || [];
-        const newInsumos = [...currentInsumos, ...insumos];
-        
+        // Replace menuEngineering with the parsed items from the uploaded file.
+        // "Baixe... e SUBA NOVAMENTE PARA ATUALIZAR" implies full replacement.
         updateDashboardData({
-            menuEngineering: newInsumos // Replaces the list with the uploaded one
-            // We could also append: [...(dashboardData.menuEngineering || []), ...insumos]
-            // But usually an upload replaces the analysis set or appends?
-            // "Baixe a planilha... e suba novamente para atualizar". Sounds like "Update".
-            // Let's replace for now, or append? `EngenhariaMenu` code previously appended to `insumos`.
-            // Safe bet: Replace or Append? If I upload a corrected sheet, I want to replace.
-            // If I upload a NEW sheet with new items, I might want to append.
-            // Given "Baixe... e SUB A NOVAMENTE PARA ATUALIZAR", it implies valid full state. 
-            // I'll stick to REPLACING `menuEngineering` with the provided file rows. 
-            // Wait, previous code was `[...currentInsumos, ...insumos]`. 
-            // I'll do `menuEngineering: insumos` (Replace) to allow clearing/updating easily.
+            menuEngineering: insumos
         });
         
         setUploadStatus('success');

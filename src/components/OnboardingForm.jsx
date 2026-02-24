@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { onboardingQuestions } from '../data/onboardingQuestions';
@@ -440,7 +442,7 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                         <div className="grid grid-cols-2 gap-4">
                             {question.fields.map(field => (
                                 <div key={field.id} className={field.id === 'name' ? 'col-span-2' : ''}>
-                                    <label className="block text-[10px] text-gray-400 mb-1 flex justify-between">
+                                    <label className="text-[10px] text-gray-400 mb-1 flex justify-between">
                                         {field.label}
                                         {field.helpText && <span className="text-white/50 cursor-pointer" title={field.helpText}>(?)</span>}
                                     </label>
@@ -532,7 +534,7 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
       >
         {/* CLT HELP MODAL OVERLAY */}
          {showCLTHelp && (
-            <div className="absolute inset-0 z-[60] bg-black/80 flex items-center justify-center p-8 backdrop-blur-sm" onClick={() => setShowCLTHelp(null)}>
+            <div className="absolute inset-0 z-60 bg-black/80 flex items-center justify-center p-8 backdrop-blur-sm" onClick={() => setShowCLTHelp(null)}>
                 <div className="bg-[#1E1E1E] rounded-xl border border-[#333] max-w-[600px] w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-lg font-bold text-white">Custo Real Funcionário (CLT)</h3>
@@ -619,7 +621,7 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                 <h2 className="font-['Plus_Jakarta_Sans'] font-semibold text-[24px] leading-[1.2] text-white/50 mb-6">
                     {currentQuestion.title}
                 </h2>
-                <p className="font-['Plus_Jakarta_Sans'] font-medium text-[14px] leading-[1.5] text-white/30">
+                <p className="font-['Plus_Jakarta_Sans'] font-medium text-[14px] leading-normal text-white/30">
                     {currentQuestion.description}
                 </p>
             </div>

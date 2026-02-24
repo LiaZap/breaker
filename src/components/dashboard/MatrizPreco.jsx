@@ -53,8 +53,23 @@ const MatrizPreco = () => {
   const parseCurrency = (val) => {
       if (typeof val === 'number') return val;
       if (!val) return 0;
-      const str = String(val).replace('R$', '').trim().replace(',', '.');
+      let str = String(val).replace(/R\$/g, '').trim();
+      // If it has comma formatting like 1.200,50 -> remove dots, change comma to dot
+      if (str.includes(',')) {
+          str = str.replace(/\./g, '').replace(',', '.');
+      }
       return parseFloat(str) || 0;
+  };
+
+  const parseSales = (val) => {
+      if (typeof val === 'number') return val;
+      if (!val) return 0;
+      let str = String(val).trim();
+      // Simple heuristic for thousand separators like "1.000"
+      if (str.includes('.') && str.indexOf('.') === str.lastIndexOf('.') && str.split('.')[1].length === 3) {
+          str = str.replace(/\./g, '');
+      }
+      return parseInt(str, 10) || 0;
   };
 
   // 1. Calculate Metrics
@@ -62,7 +77,7 @@ const MatrizPreco = () => {
     return displayItems.map(item => ({
       ...item,
       category: item.category || 'Geral',
-      sales: Number(item.sales || 0),
+      sales: parseSales(item.sales),
       price: parseCurrency(item.price),
       cost: parseCurrency(item.cost),
       margin: parseCurrency(item.price) - parseCurrency(item.cost),
@@ -74,55 +89,78 @@ const MatrizPreco = () => {
     return ["Todas", ...Array.from(cats)].sort();
   }, [itemsWithMetrics]);
 
-  const averagesByCategory = useMemo(() => {
-    const avgs = {};
-    const categories = new Set(itemsWithMetrics.map(i => i.category));
+  // Filter items first so averages are based on the viewed items
+  const baseFilteredItems = useMemo(() => {
+    if (selectedMenuCategory === "Todas") return itemsWithMetrics;
+    return itemsWithMetrics.filter(i => i.category === selectedMenuCategory);
+  }, [itemsWithMetrics, selectedMenuCategory]);
 
-    categories.forEach(cat => {
-        const catItems = itemsWithMetrics.filter(i => i.category === cat);
-        const totalSales = catItems.reduce((sum, item) => sum + item.sales, 0);
-        const totalMargin = catItems.reduce((sum, item) => sum + item.margin, 0);
-        avgs[cat] = {
-            sales: totalSales / (catItems.length || 1),
-            margin: totalMargin / (catItems.length || 1),
-        };
-    });
-    return avgs;
-  }, [itemsWithMetrics]);
+  const currentAverages = useMemo(() => {
+    if (baseFilteredItems.length === 0) return { sales: 0, margin: 0 };
+    const totalSales = baseFilteredItems.reduce((sum, item) => sum + item.sales, 0);
+    const totalMargin = baseFilteredItems.reduce((sum, item) => sum + item.margin, 0);
+    return {
+      sales: totalSales / baseFilteredItems.length,
+      margin: totalMargin / baseFilteredItems.length,
+    };
+  }, [baseFilteredItems]);
 
-  // 2. Classify Items (always compare against their OWN category average)
+  // 2. Classify Items (always compare against the CURRENT average view)
   const classifiedItems = useMemo(() => {
-    return itemsWithMetrics.map(item => {
-      const avg = averagesByCategory[item.category];
+    return baseFilteredItems.map(item => {
       let type;
-      if (item.sales >= avg.sales && item.margin >= avg.margin) type = 'ESTRELA';
-      else if (item.sales >= avg.sales && item.margin < avg.margin) type = 'POPULAR';
-      else if (item.sales < avg.sales && item.margin >= avg.margin) type = 'POTENCIAL';
+      if (item.sales >= currentAverages.sales && item.margin >= currentAverages.margin) type = 'ESTRELA';
+      else if (item.sales >= currentAverages.sales && item.margin < currentAverages.margin) type = 'POPULAR';
+      else if (item.sales < currentAverages.sales && item.margin >= currentAverages.margin) type = 'POTENCIAL';
       else type = 'CRITICO';
       
       return { ...item, type };
     });
-  }, [itemsWithMetrics, averagesByCategory]);
+  }, [baseFilteredItems, currentAverages]);
 
-  const filteredItemsForDisplay = useMemo(() => {
-    if (selectedMenuCategory === "Todas") return classifiedItems;
-    return classifiedItems.filter(i => i.category === selectedMenuCategory);
-  }, [classifiedItems, selectedMenuCategory]);
+  const filteredItemsForDisplay = classifiedItems; // Already filtered
 
   // 3. Counts (based on filtered view)
   const counts = useMemo(() => {
     const c = { ESTRELA: 0, POPULAR: 0, POTENCIAL: 0, CRITICO: 0 };
-    filteredItemsForDisplay.forEach(item => c[item.type]++);
+    filteredItemsForDisplay.forEach(item => {
+        if (c[item.type] !== undefined) c[item.type]++;
+    });
     return c;
   }, [filteredItemsForDisplay]);
 
   // 4. Chart Scaling (based on filtered view)
+  // Generate "nice" tick values for an axis
+  const generateNiceTicks = (maxVal, count = 5) => {
+    if (maxVal <= 0) return [0];
+    const rawStep = maxVal / (count - 1);
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const residual = rawStep / magnitude;
+    let niceStep;
+    if (residual <= 1.5) niceStep = 1 * magnitude;
+    else if (residual <= 3) niceStep = 2 * magnitude;
+    else if (residual <= 7) niceStep = 5 * magnitude;
+    else niceStep = 10 * magnitude;
+    const ticks = [];
+    for (let v = 0; v <= maxVal + niceStep * 0.01; v += niceStep) {
+      ticks.push(Math.round(v * 100) / 100);
+    }
+    if (ticks.length === 0) ticks.push(0);
+    return ticks;
+  };
+
   const chartConfig = useMemo(() => {
-    const maxSales = Math.max(0, ...filteredItemsForDisplay.map(i => i.sales)) * 1.15; // +Buffer
-    const maxMargin = Math.max(0, ...filteredItemsForDisplay.map(i => i.margin)) * 1.15;
+    const maxSales = Math.max(0, ...filteredItemsForDisplay.map(i => i.sales)) * 1.25;
+    const maxMargin = Math.max(0, ...filteredItemsForDisplay.map(i => i.margin)) * 1.25;
+    const safeMaxX = maxSales || 10;
+    const safeMaxY = maxMargin || 10;
+    const xTicks = generateNiceTicks(safeMaxX);
+    const yTicks = generateNiceTicks(safeMaxY);
     return { 
-        maxX: maxSales || 10, 
-        maxY: maxMargin || 10 
+      maxX: xTicks[xTicks.length - 1] || safeMaxX,
+      maxY: yTicks[yTicks.length - 1] || safeMaxY,
+      xTicks,
+      yTicks,
     };
   }, [filteredItemsForDisplay]);
 
@@ -192,7 +230,11 @@ const MatrizPreco = () => {
           <div className="flex gap-4 items-center">
              <div>
                  <h2 className="text-[18px] font-bold text-white">Matriz de Cardápio</h2>
-                 <p className="text-[12px] text-[#868686]">Comparativo de pratos contra a média da própria categoria.</p>
+                 <p className="text-[12px] text-[#868686]">
+                   {selectedMenuCategory === "Todas" 
+                     ? "Comparativo de pratos contra a média geral do cardápio." 
+                     : "Comparativo de pratos contra a média da categoria selecionada."}
+                 </p>
              </div>
              
              {/* MENU CATEGORY DROPDOWN */}
@@ -227,29 +269,50 @@ const MatrizPreco = () => {
 
         {/* CHART AREA */}
         <div className="flex-1 relative w-full h-full min-h-[300px]">
-          {/* Axis Labels */}
-          <div className="absolute left-[-20px] top-1/2 -translate-y-1/2 -rotate-90 text-[10px] text-[#868686] font-medium tracking-wide">
+          {/* Y-Axis Label (outside chart area) */}
+          <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 -rotate-90 text-[10px] text-[#868686] font-medium tracking-wide whitespace-nowrap" style={{ transformOrigin: 'center center' }}>
              Margem (R$)
              <span className="block text-[8px] font-normal text-[#555]">Quanto este produto gera de margem</span>
           </div>
-          <div className="absolute bottom-[-5px] left-6 text-[10px] text-[#868686] font-medium tracking-wide">
+          {/* X-Axis Label (outside chart area) */}
+          <div className="absolute bottom-0 left-[55px] right-[20px] text-center text-[10px] text-[#868686] font-medium tracking-wide">
              Volume de Vendas
              <span className="block text-[8px] font-normal text-[#555]">Quanto este produto vende em comparativos</span>
           </div>
 
-          {/* Visualization Container */}
-          <div className="absolute inset-[30px] bottom-[40px] right-[20px]">
-            {/* SVG Chart */}
-            <svg className="w-full h-full overflow-visible">
-              
-              {/* Grid Lines (dotted) */}
-              <defs>
-                 <pattern id="grid" width="10%" height="10%" patternUnits="userSpaceOnUse">
-                    <path d="M 2 0 L 0 0 0 2" fill="none" stroke="#2A2A2C" strokeWidth="1"/>
-                    <circle cx="1" cy="1" r="1" fill="#333" />
-                 </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="transparent" />
+          {/* Chart container with margins for axes */}
+          <div className="absolute top-[10px] left-[55px] right-[20px] bottom-[40px]">
+
+            {/* Y-Axis Tick Labels (positioned outside SVG, left edge) */}
+            {chartConfig.yTicks.map((val) => {
+              const pct = 100 - (val / chartConfig.maxY) * 100;
+              return (
+                <div 
+                  key={`yt-${val}`}
+                  className="absolute text-[9px] text-[#555] text-right"
+                  style={{ top: `${pct}%`, right: '100%', transform: 'translateY(-50%)', paddingRight: '6px', whiteSpace: 'nowrap' }}
+                >
+                  {val % 1 === 0 ? val : val.toFixed(0)}
+                </div>
+              );
+            })}
+
+            {/* X-Axis Tick Labels (positioned outside SVG, bottom edge) */}
+            {chartConfig.xTicks.map((val) => {
+              const pct = (val / chartConfig.maxX) * 100;
+              return (
+                <div
+                  key={`xt-${val}`}
+                  className="absolute text-[9px] text-[#555] text-center"
+                  style={{ left: `${pct}%`, top: '100%', transform: 'translateX(-50%)', paddingTop: '4px' }}
+                >
+                  {val % 1 === 0 ? val : val.toFixed(1)}
+                </div>
+              );
+            })}
+
+            {/* SVG Chart (fills the container, 0-100% coordinates) */}
+            <svg className="w-full h-full" style={{ overflow: 'visible' }}>
               
               {/* Dotted Grid Background */}
               {[...Array(11)].map((_, i) => (
@@ -260,60 +323,32 @@ const MatrizPreco = () => {
               ))}
 
               {/* Quadrant Lines (Average Lines) */}
-              {selectedMenuCategory !== "Todas" && averagesByCategory[selectedMenuCategory] ? (
+              {filteredItemsForDisplay.length > 0 && (
                   <>
                       <line 
-                        x1={`${getX(averagesByCategory[selectedMenuCategory].sales)}%`} y1="0" 
-                        x2={`${getX(averagesByCategory[selectedMenuCategory].sales)}%`} y2="100%" 
+                        x1={`${Math.max(0, Math.min(100, getX(currentAverages.sales)))}%`} y1="0" 
+                        x2={`${Math.max(0, Math.min(100, getX(currentAverages.sales)))}%`} y2="100%" 
                         stroke="#888" strokeWidth="1" strokeDasharray="4 4" 
                       />
                       <line 
-                        x1="0" y1={`${getY(averagesByCategory[selectedMenuCategory].margin)}%`} 
-                        x2="100%" y2={`${getY(averagesByCategory[selectedMenuCategory].margin)}%`} 
+                        x1="0" y1={`${Math.max(0, Math.min(100, getY(currentAverages.margin)))}%`} 
+                        x2="100%" y2={`${Math.max(0, Math.min(100, getY(currentAverages.margin)))}%`} 
                         stroke="#888" strokeWidth="1" strokeDasharray="4 4" 
                       />
                       
                       {/* Sub-label for lines */}
-                      <text x={`${getX(averagesByCategory[selectedMenuCategory].sales) + 1}%`} y="15" fill="#888" fontSize="9">Média Vendas ({averagesByCategory[selectedMenuCategory].sales.toFixed(1)})</text>
-                      <text x="5" y={`${getY(averagesByCategory[selectedMenuCategory].margin) - 5}%`} fill="#888" fontSize="9">Média Margem (R${averagesByCategory[selectedMenuCategory].margin.toFixed(2)})</text>
+                      {getX(currentAverages.sales) >= 0 && getX(currentAverages.sales) <= 100 && (
+                          <text x={`${getX(currentAverages.sales) + 1}%`} y="15" fill="#888" fontSize="9">
+                              Média Vendas ({currentAverages.sales.toFixed(1)})
+                          </text>
+                      )}
+                      {getY(currentAverages.margin) >= 0 && getY(currentAverages.margin) <= 100 && (
+                          <text x="5" y={`${getY(currentAverages.margin) - 2}%`} fill="#888" fontSize="9">
+                              Média Margem (R${currentAverages.margin.toFixed(2)})
+                          </text>
+                      )}
                   </>
-              ) : (
-                  // If 'Todas' is selected, we can't draw one crosshair line reliably, as each item has its own center.
-                  // We could draw global average or nothing. Standard is nothing for multiple distinct sets.
-                  <text x="10" y="20" fill="#555" fontSize="10">Selecione uma categoria para visualizar as médias (crosshairs).</text>
               )}
-              
-              {/* Axis Labels (max values) and Ticks */}
-              {/* X Axis Ticks */}
-              {[0, 25, 50, 75, 100].map(pct => (
-                <g key={`x-tick-${pct}`}>
-                   <text 
-                      x={`${pct}%`} 
-                      y="105%" 
-                      textAnchor="middle" 
-                      fill="#555" 
-                      fontSize="9"
-                   >
-                      {Math.round(chartConfig.maxX * (pct/100))}
-                   </text>
-                </g>
-              ))}
-
-              {/* Y Axis Ticks */}
-              {[0, 25, 50, 75, 100].map(pct => (
-                <g key={`y-tick-${pct}`}>
-                   <text 
-                      x="-8" 
-                      y={`${100-pct}%`} 
-                      textAnchor="end" 
-                      dominantBaseline="middle" 
-                      fill="#555" 
-                      fontSize="9"
-                   >
-                      {Math.round(chartConfig.maxY * (pct/100))}
-                   </text>
-                </g>
-              ))}
 
               {/* Data Points */}
               {filteredItemsForDisplay.map((item) => {

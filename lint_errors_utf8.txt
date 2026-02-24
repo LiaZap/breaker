@@ -1,0 +1,125 @@
+﻿
+C:\Users\Paulo\Desktop\Breaker\server\inspect_db.js
+  1:26  error  'require' is not defined  no-undef
+
+C:\Users\Paulo\Desktop\Breaker\server\restore_data.js
+  1:26  error  'require' is not defined  no-undef
+
+C:\Users\Paulo\Desktop\Breaker\server\src\index.js
+   1:17  error  'require' is not defined    no-undef
+   2:14  error  'require' is not defined    no-undef
+   3:26  error  'require' is not defined    no-undef
+   4:16  error  'require' is not defined    no-undef
+   5:16  error  'require' is not defined    no-undef
+   6:19  error  'require' is not defined    no-undef
+   7:16  error  'require' is not defined    no-undef
+  13:14  error  'process' is not defined    no-undef
+  38:14  error  'require' is not defined    no-undef
+  40:28  error  '__dirname' is not defined  no-undef
+  56:1   error  'process' is not defined    no-undef
+  58:3   error  'process' is not defined    no-undef
+
+C:\Users\Paulo\Desktop\Breaker\server\src\routes.js
+    1:17  error  'require' is not defined           no-undef
+    2:26  error  'require' is not defined           no-undef
+   56:12  error  'error' is defined but never used  no-unused-vars
+   90:12  error  'error' is defined but never used  no-unused-vars
+  126:16  error  'require' is not defined           no-undef
+  127:28  error  'require' is not defined           no-undef
+  144:1   error  'module' is not defined            no-undef
+
+C:\Users\Paulo\Desktop\Breaker\server\src\services\excelService.js
+   1:14  error  'require' is not defined  no-undef
+  62:1   error  'module' is not defined   no-undef
+
+C:\Users\Paulo\Desktop\Breaker\src\App.jsx
+  12:10  error  'clientHash' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-unused-vars
+  20:7   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  18 |
+  19 |     if (hash) {
+> 20 |       setClientHash(hash);
+     |       ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  21 |       setCurrentPage('splash');
+  22 |     } else {
+  23 |       // Default to landing if no hash (development mode or new user)  react-hooks/set-state-in-effect
+
+C:\Users\Paulo\Desktop\Breaker\src\components\LandingPage.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Paulo\Desktop\Breaker\src\components\OnboardingForm.jsx
+    2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-unused-vars
+   11:9   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+   9 |     
+  10 |     useEffect(() => {
+> 11 |         setSearchTerm(value || '');
+     |         ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  12 |     }, [value]);
+  13 |
+  14 |     // Helper to normalize strings (remove accents and make lowercase)  react-hooks/set-state-in-effect
+   72:9   error  'progress' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             no-unused-vars
+  147:7   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  145 |   useEffect(() => {
+  146 |     if (dashboardData?.formData) {
+> 147 |       setFormData(dashboardData.formData);
+      |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  148 |     }
+  149 |   }, [dashboardData]);
+  150 |                       react-hooks/set-state-in-effect
+
+C:\Users\Paulo\Desktop\Breaker\src\components\SplashScreen.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Paulo\Desktop\Breaker\src\components\SplashScreen_backup.jsx
+  1:17  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+
+C:\Users\Paulo\Desktop\Breaker\src\components\admin\AdminLogin.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Paulo\Desktop\Breaker\src\components\admin\AdminPanel.jsx
+  18:9   error  'generateHash' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  36:12  error  'err' is defined but never used                                                               no-unused-vars
+
+C:\Users\Paulo\Desktop\Breaker\src\components\dashboard\BreakEvenGraphic.jsx
+   6:3  error  'currentRevenue' is assigned a value but never used                                       no-unused-vars
+   7:3  error  'target' is assigned a value but never used                                               no-unused-vars
+  37:9  error  'endAngle' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Paulo\Desktop\Breaker\src\components\dashboard\FichaTecnica.jsx
+    4:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  143:9   error  'parseNum' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                        no-unused-vars
+  155:9   error  'unitPricePB' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                     no-unused-vars
+  345:7   error  'availableInsumosPool' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                            no-unused-vars
+  364:66  error  'onDelete' is defined but never used                                                                                            no-unused-vars
+
+C:\Users\Paulo\Desktop\Breaker\src\components\dashboard\FinanceOverview.jsx
+   8:9  error  'currentMonthIndex' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  18:9  error  'activeIndex' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+
+C:\Users\Paulo\Desktop\Breaker\src\context\DashboardContext.jsx
+    5:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  315:11  error  'breakEvenPercentage' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                             no-unused-vars
+
+Ô£û 48 problems (48 errors, 0 warnings)
+
