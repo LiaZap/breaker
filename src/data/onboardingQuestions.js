@@ -95,7 +95,6 @@ export const onboardingQuestions = [
     fields: [
       { id: 'energy', label: 'Energia Elétrica', type: 'currency', placeholder: 'R$ 0,00' },
       { id: 'water', label: 'Água / Esgoto', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'gas', label: 'Gás Encanado', type: 'currency', placeholder: 'R$ 0,00' },
       { id: 'internet', label: 'Internet / Telefone', type: 'currency', placeholder: 'R$ 0,00' },
       { id: 'security', label: 'Segurança / Alarme', type: 'currency', placeholder: 'R$ 0,00' }
     ]

@@ -200,7 +200,7 @@ export const DashboardProvider = ({ children }) => {
     }
     
     // Utilities, Recurring, Operational Fixed
-    sumComposite('utilities', ['energy', 'water', 'gas', 'internet', 'security']);
+    sumComposite('utilities', ['energy', 'water', 'internet', 'security']);
     sumComposite('recurring_services', ['pest_control', 'waste_removal', 'cleaning_supplies']);
     sumComposite('operational_fixed', ['kitchen_gas', 'kitchen_oil']);
     
