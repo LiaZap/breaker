@@ -66,6 +66,19 @@ export const DashboardProvider = ({ children }) => {
                 { label: 'Produtos Sem Ficha', value: getVal('Sem Ficha') }
               ];
             }
+
+            // If onboarding was NOT completed (no formData), reset financial cards to zeros
+            // to prevent stale calculated data from showing before the user fills out the onboarding
+            if (!merged.formData) {
+              merged.breakEven = initialData.breakEven;
+              merged.revenue = { ...initialData.revenue };
+              merged.cards = {
+                ...merged.cards,
+                moneyOnTable: initialData.cards.moneyOnTable,
+                costStructure: initialData.cards.costStructure
+              };
+            }
+
             return merged;
           });
         })

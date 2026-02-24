@@ -38,7 +38,7 @@ const CATEGORIES = {
 const MatrizPreco = () => {
   const { dashboardData } = useDashboard();
   const [activeCategory, setActiveCategory] = useState(null); // Filter by click on chips (classification)
-  const [selectedMenuCategory, setSelectedMenuCategory] = useState("Todas"); // Filter by menu category (Pratos, Bebidas, etc.)
+  const [selectedMenuCategory, setSelectedMenuCategory] = useState(null); // null = show all, or a specific category
 
   // Use Real Data or Fallback to Initial Items if empty (for demo purposes, or better: just real data if we want to be strict)
   // User request: "has to be real dishes". So we should prioritize real data.
@@ -86,12 +86,12 @@ const MatrizPreco = () => {
 
   const uniqueMenuCategories = useMemo(() => {
     const cats = new Set(itemsWithMetrics.map(item => item.category));
-    return ["Todas", ...Array.from(cats)].sort();
+    return Array.from(cats).sort();
   }, [itemsWithMetrics]);
 
   // Filter items first so averages are based on the viewed items
   const baseFilteredItems = useMemo(() => {
-    if (selectedMenuCategory === "Todas") return itemsWithMetrics;
+    if (!selectedMenuCategory) return itemsWithMetrics;
     return itemsWithMetrics.filter(i => i.category === selectedMenuCategory);
   }, [itemsWithMetrics, selectedMenuCategory]);
 
@@ -231,7 +231,7 @@ const MatrizPreco = () => {
              <div>
                  <h2 className="text-[18px] font-bold text-white">Matriz de Cardápio</h2>
                  <p className="text-[12px] text-[#868686]">
-                   {selectedMenuCategory === "Todas" 
+                   {!selectedMenuCategory 
                      ? "Comparativo de pratos contra a média geral do cardápio." 
                      : "Comparativo de pratos contra a média da categoria selecionada."}
                  </p>
@@ -242,9 +242,10 @@ const MatrizPreco = () => {
                 <label className="block text-[10px] text-[#868686] mb-1">Filtrar Categoria</label>
                 <select 
                    className="bg-[#151515] text-[12px] text-white border border-[#2A2A2C] rounded-[8px] px-3 py-1.5 outline-none hover:border-[#444] min-w-[120px]"
-                   value={selectedMenuCategory}
-                   onChange={(e) => setSelectedMenuCategory(e.target.value)}
+                   value={selectedMenuCategory || ''}
+                   onChange={(e) => setSelectedMenuCategory(e.target.value || null)}
                 >
+                    <option value="">Selecione</option>
                     {uniqueMenuCategories.map(cat => (
                         <option key={cat} value={cat}>{cat}</option>
                     ))}
