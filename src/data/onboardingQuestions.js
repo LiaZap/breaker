@@ -1,4 +1,21 @@
-export const onboardingQuestions = [
+  // ==================================================================================
+  // FASE 0: Dados do Usuário
+  // ==================================================================================
+  
+  // Etapa 00: Perfil do Usuário
+  {
+    id: 'user_info',
+    section: 'Perfil do Usuário',
+    title: 'Seus Dados',
+    description: 'Como devemos te chamar no sistema?',
+    type: 'composite',
+    fields: [
+      { id: 'user_name', label: 'Seu Nome', type: 'text', placeholder: 'Ex: Paulo' },
+      { id: 'user_phone', label: 'WhatsApp', type: 'text', placeholder: '(11) 99999-9999' },
+      { id: 'user_photo', label: 'Sua Foto (Opcional)', type: 'file', placeholder: 'Anexar sua foto' }
+    ]
+  },,
+
   // ==================================================================================
   // FASE 1: Identidade e Equipe
   // ==================================================================================
@@ -13,6 +30,7 @@ export const onboardingQuestions = [
     fields: [
       { id: 'restaurant_name', label: 'Nome do Restaurante', type: 'text', placeholder: 'Ex: Terra e Mar 360' },
       { id: 'cuisine_type', label: 'Tipo de Negócio', type: 'autocomplete', placeholder: 'Ex: Italiana, Japonesa...', options: ['Italiana', 'Japonesa', 'Brasileira', 'Contemporânea', 'Fast Food', 'Pizzaria', 'Hamburgueria', 'Asiática', 'Árabe', 'Mexicana', 'Vegetariana/Vegana', 'Cafeteria', 'Doceria/Confeitaria', 'Padaria', 'Bar/Pub', 'Steakhouse/Churrascaria', 'Frutos do Mar', 'Bistrô', 'Buffet', 'Outros'] },
+      { id: 'business_logo', label: 'Logo da Empresa (Opcional)', type: 'file', placeholder: 'Anexar logo' },
       { id: 'tax_regime', label: 'Regime Tributário', type: 'select', options: ['Simples Nacional', 'Lucro Presumido', 'Lucro Real'] },
       // Logic for MEI will be handled in form if Simples is selected
       { id: 'is_mei', label: 'É MEI?', type: 'select', options: ['Não', 'Sim'], hidden: true, dependsOn: 'tax_regime', dependsValue: 'Simples Nacional' } 

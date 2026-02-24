@@ -361,8 +361,9 @@ export const DashboardProvider = ({ children }) => {
         },
         user: {
             ...initialData.user,
-            name: "Usuário",
-            initials: "US"
+            name: formData?.user_info?.user_name || "Usuário",
+            initials: (formData?.user_info?.user_name || "US").substring(0, 2).toUpperCase(),
+            photo: formData?.user_info?.user_photo || null
         },
         period: {
             date: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }),
