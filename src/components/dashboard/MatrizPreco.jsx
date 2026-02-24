@@ -270,18 +270,18 @@ const MatrizPreco = () => {
         {/* CHART AREA */}
         <div className="flex-1 relative w-full h-full min-h-[300px]">
           {/* Y-Axis Label (outside chart area) */}
-          <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 -rotate-90 text-[10px] text-[#868686] font-medium tracking-wide whitespace-nowrap" style={{ transformOrigin: 'center center' }}>
+          <div className="absolute left-[10px] top-1/2 -translate-y-1/2 -rotate-90 text-[10px] text-[#868686] font-medium tracking-wide whitespace-nowrap text-center" style={{ transformOrigin: 'center center' }}>
              Margem (R$)
              <span className="block text-[8px] font-normal text-[#555]">Quanto este produto gera de margem</span>
           </div>
           {/* X-Axis Label (outside chart area) */}
-          <div className="absolute bottom-0 left-[55px] right-[20px] text-center text-[10px] text-[#868686] font-medium tracking-wide">
+          <div className="absolute bottom-0 left-[80px] right-[20px] text-center text-[10px] text-[#868686] font-medium tracking-wide">
              Volume de Vendas
              <span className="block text-[8px] font-normal text-[#555]">Quanto este produto vende em comparativos</span>
           </div>
 
           {/* Chart container with margins for axes */}
-          <div className="absolute top-[10px] left-[55px] right-[20px] bottom-[40px]">
+          <div className="absolute top-[10px] left-[80px] right-[20px] bottom-[40px]">
 
             {/* Y-Axis Tick Labels (positioned outside SVG, left edge) */}
             {chartConfig.yTicks.map((val) => {
