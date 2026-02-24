@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 
 const EngenhariaMenu = () => {
-  const { dashboardData, updateDashboardData } = useDashboard();
+  const { updateDashboardData } = useDashboard();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('idle'); // idle, uploading, success, error
 
