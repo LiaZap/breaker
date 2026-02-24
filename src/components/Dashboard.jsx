@@ -42,7 +42,7 @@ const Dashboard = () => {
       <>
       {/* MAIN CONTENT */}
       <div className="ml-0 md:ml-[85px] py-2 flex flex-col min-h-0 shrink-0">
-        <div className="max-w-[1500px] mx-auto px-3 md:px-6 w-full flex flex-col min-h-0">
+        <div className="w-full px-3 md:px-6 2xl:px-10 flex flex-col min-h-0">
         
         <DashboardHeader data={dashboardData} />
 
@@ -170,7 +170,7 @@ const Dashboard = () => {
 
       {/* BOTTOM ROW - Cards (full-width bg) */}
       <div className="bg-[#1B1B1D] pl-3 md:pl-[85px] pr-3 md:pr-6 py-3 w-full flex-1">
-        <div className="max-w-[1500px] mx-auto w-full">
+        <div className="w-full px-3 md:px-0 2xl:px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             <MoneyOnTable data={dashboardData.cards.moneyOnTable} />
             <TechnicalSheets data={dashboardData.cards.technicalSheets} />
