@@ -1023,7 +1023,8 @@ const FichaTecnica = () => {
   const handleDownloadTemplate = () => {
     const header = "Nome;Categoria;Rendimento;Unidade;Custo\n";
     const example = "Exemplo Insumo;Proteínas;200;gr;10.00\n";
-    const blob = new Blob([header + example], { type: 'text/csv;charset=utf-8;' });
+    // Add UTF-8 BOM (\uFEFF) so Excel opens it with correct encoding for ç, ã, etc.
+    const blob = new Blob(["\uFEFF" + header + example], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     if (link.download !== undefined) {
         const url = URL.createObjectURL(blob);

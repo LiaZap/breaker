@@ -9,14 +9,19 @@ const EngenhariaMenu = () => {
 
   const handleDownload = () => {
     // Create CSV content using semicolons for better PT-BR Excel compatibility
-    const csvContent = "data:text/csv;charset=utf-8,Nome;Preço;Custo;Vendas;Categoria\nPrato Exemplo;50.00;15.00;100;Pratos Principais";
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = "Nome;Preço;Custo;Vendas;Categoria\nPrato Exemplo;50.00;15.00;100;Pratos Principais";
+    // Add UTF-8 BOM (\uFEFF) so Excel opens it with correct encoding for ç, ã, etc.
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "modelo_engenharia_menu.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "modelo_engenharia_menu.csv");
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
   };
 
   const handleUpload = (e) => {
