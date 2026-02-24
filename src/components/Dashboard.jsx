@@ -48,7 +48,7 @@ const Dashboard = () => {
         <DashboardHeader data={dashboardData} />
 
         {/* MAIN GRID - 4 columns layout (responsive fluid) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 xl:gap-6 mb-0 min-h-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 xl:gap-6 mb-0 min-h-0">
           
           {/* COL 1 - Left Panel */}
           <div className="flex flex-col h-full py-2">
@@ -173,7 +173,7 @@ const Dashboard = () => {
       {/* BOTTOM ROW - Cards (full-width bg) */}
       <div className="pl-3 md:pl-[85px] pr-3 md:pr-6 py-6 w-full">
         <div className="w-full px-3 md:px-0 2xl:px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <MoneyOnTable data={dashboardData.cards.moneyOnTable} />
             <TechnicalSheets data={dashboardData.cards.technicalSheets} />
             <CostStructure data={dashboardData.cards.costStructure} />
