@@ -21,8 +21,27 @@ const Dashboard = () => {
   const { dashboardData } = useDashboard();
   const [activePage, setActivePage] = useState('home');
 
+  // Dynamic zoom: scale everything proportionally based on viewport width
+  // Reference: 1920px = 100% zoom. 4K (3840px) = 200%, 1440px = 75%, etc.
+  const [zoomLevel, setZoomLevel] = useState(1);
+  
+  React.useEffect(() => {
+    const calcZoom = () => {
+      const vw = window.innerWidth;
+      // Clamp between 0.7 (very small screens) and 2.5 (ultra-large 4K+)
+      const zoom = Math.min(Math.max(vw / 1920, 0.7), 2.5);
+      setZoomLevel(zoom);
+    };
+    calcZoom();
+    window.addEventListener('resize', calcZoom);
+    return () => window.removeEventListener('resize', calcZoom);
+  }, []);
+
   return (
-    <div className="relative w-full h-screen bg-[#101010] font-jakarta text-white select-none flex flex-col overflow-x-hidden overflow-y-auto">
+    <div 
+      className="relative w-full h-screen bg-[#101010] font-jakarta text-white select-none flex flex-col overflow-x-hidden overflow-y-auto"
+      style={{ zoom: zoomLevel }}
+    >
       
       <Sidebar activePage={activePage} onNavigate={setActivePage} />
 
