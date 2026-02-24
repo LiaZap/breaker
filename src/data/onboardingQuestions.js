@@ -15,7 +15,7 @@ export const onboardingQuestions = [
       { id: 'user_phone', label: 'WhatsApp', type: 'text', placeholder: '(11) 99999-9999' },
       { id: 'user_photo', label: 'Sua Foto (Opcional)', type: 'file', placeholder: 'Anexar sua foto' }
     ]
-  },,
+  },
 
   // ==================================================================================
   // FASE 1: Identidade e Equipe
