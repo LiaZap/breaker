@@ -16,5 +16,5 @@ COPY . .
 # Expose API port
 EXPOSE 3001
 
-# Start: apply migrations, then start server
-CMD npm start
+# Start: push schema to DB (handles both fresh + existing), then start server
+CMD npx prisma db push --skip-generate && node src/index.js
