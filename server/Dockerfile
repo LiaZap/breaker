@@ -16,5 +16,5 @@ COPY . .
 # Expose API port
 EXPOSE 3001
 
-# Start command
-CMD ["npm", "start"]
+# Start: apply schema changes, then start server
+CMD npx prisma db push --schema=./prisma/schema.prisma && npm start
