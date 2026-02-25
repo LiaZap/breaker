@@ -1,5 +1,6 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
 const router = express.Router();
 const prisma = new PrismaClient();
 
@@ -69,6 +70,61 @@ router.delete('/admin/clients/:id', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro ao excluir cliente' });
+  }
+});
+
+// ========================
+// CLIENT AUTH ROUTES
+// ========================
+
+// Register (at end of onboarding)
+router.post('/client/register', async (req, res) => {
+  try {
+    const { hash, email, password } = req.body;
+    if (!hash || !email || !password) {
+      return res.status(400).json({ error: 'Hash, email e senha são obrigatórios' });
+    }
+
+    const existing = await prisma.client.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(409).json({ error: 'Este email já está em uso' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.client.update({
+      where: { hash },
+      data: { email, password: hashedPassword }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao registrar credenciais' });
+  }
+});
+
+// Client Login
+router.post('/client/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+    }
+
+    const client = await prisma.client.findUnique({ where: { email } });
+    if (!client || !client.password) {
+      return res.status(401).json({ error: 'Email ou senha incorretos' });
+    }
+
+    const valid = await bcrypt.compare(password, client.password);
+    if (!valid) {
+      return res.status(401).json({ error: 'Email ou senha incorretos' });
+    }
+
+    res.json({ success: true, hash: client.hash, name: client.name });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao fazer login' });
   }
 });
 

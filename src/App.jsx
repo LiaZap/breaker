@@ -3,30 +3,27 @@ import React, { useState, useEffect } from 'react';
 import SplashScreen from './components/SplashScreen';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
+import ClientLogin from './components/ClientLogin';
 import AdminLogin from './components/admin/AdminLogin';
 import AdminPanel from './components/admin/AdminPanel';
 import { useDashboard } from './context/DashboardContext';
 
 function App() {
   const { dashboardData } = useDashboard();
-  const [currentPage, setCurrentPage] = useState('loading'); // loading, admin-login, admin-panel, splash, landing, dashboard
+  const [currentPage, setCurrentPage] = useState('loading');
 
   useEffect(() => {
-    // Check for hash in URL
     const params = new URLSearchParams(window.location.search);
     const hash = params.get('hash');
 
     if (hash) {
       setCurrentPage('splash');
     } else {
-      // Default to landing if no hash (development mode or new user)
-      // Or admin-login if strictly admin. Let's default to admin-login as per original flow.
-      setCurrentPage('admin-login');
+      setCurrentPage('client-login');
     }
   }, []);
 
   const handleSplashComplete = () => {
-    // Check if user has already onboarded (must have formData)
     if (dashboardData?.formData && Object.keys(dashboardData.formData).length > 0) {
         setCurrentPage('dashboard');
     } else {
@@ -38,6 +35,10 @@ function App() {
     setCurrentPage('dashboard');
   };
 
+  const handleClientLogin = (hash) => {
+    window.location.href = `${window.location.pathname}?hash=${hash}`;
+  };
+
   const handleAdminLogin = () => {
     setCurrentPage('admin-panel');
   };
@@ -46,6 +47,14 @@ function App() {
 
   return (
     <>
+      {/* CLIENT LOGIN */}
+      {currentPage === 'client-login' && (
+        <ClientLogin 
+          onLogin={handleClientLogin} 
+          onAdminAccess={() => setCurrentPage('admin-login')}
+        />
+      )}
+
       {/* ADMIN FLOW */}
       {currentPage === 'admin-login' && (
         <AdminLogin onLogin={handleAdminLogin} />

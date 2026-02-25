@@ -63,15 +63,23 @@ const AutocompleteField = ({ field, value, onChange }) => {
     );
 };
 
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [formData, setFormData] = useState({});
   const [direction, setDirection] = useState(0);
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirm, setRegConfirm] = useState('');
+  const [regError, setRegError] = useState('');
+  const [regLoading, setRegLoading] = useState(false);
 
   const currentQuestion = onboardingQuestions[currentStepIndex];
   const totalSteps = onboardingQuestions.length;
-  // Calculate progress based on index
-  const progress = ((currentStepIndex + 1) / totalSteps) * 100;
+  const totalWithReg = totalSteps + 1;
+  const progress = showRegistration ? 100 : ((currentStepIndex + 1) / totalWithReg) * 100;
 
   // Format currency helper
   const formatCurrency = (value) => {
@@ -157,15 +165,51 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
       setDirection(1);
       setCurrentStepIndex(prev => prev + 1);
     } else {
-      try {
-        setIsSubmitting(true);
-        updateDashboardData(formData);
-        if (onComplete) onComplete(formData);
-      } catch (error) {
-        console.error("Error finalizing onboarding:", error);
-        alert("Erro ao finalizar: " + (error.message || "Erro desconhecido"));
-        setIsSubmitting(false);
+      updateDashboardData(formData);
+      setDirection(1);
+      setShowRegistration(true);
+    }
+  };
+
+  const handleRegistrationSubmit = async () => {
+    if (!regEmail || !regPassword || !regConfirm) {
+      setRegError('Preencha todos os campos.');
+      return;
+    }
+    if (regPassword.length < 6) {
+      setRegError('A senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+    if (regPassword !== regConfirm) {
+      setRegError('As senhas não conferem.');
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const hash = params.get('hash');
+    if (!hash) {
+      setRegError('Hash não encontrado na URL.');
+      return;
+    }
+
+    setRegLoading(true);
+    setRegError('');
+    try {
+      const res = await fetch(`${API_URL}/api/client/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hash, email: regEmail, password: regPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRegError(data.error || 'Erro ao registrar.');
+        setRegLoading(false);
+        return;
       }
+      if (onComplete) onComplete(formData);
+    } catch {
+      setRegError('Erro de conexão. Tente novamente.');
+      setRegLoading(false);
     }
   };
 
@@ -615,14 +659,14 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
 
         {/* Progress Bar - Segmented */}
         <div className="absolute top-[100px] left-0 right-0 flex gap-1 px-[10%]">
-          {[...Array(totalSteps)].map((_, i) => (
+          {[...Array(totalWithReg)].map((_, i) => (
             <div 
               key={i}
               className="h-[4px] flex-1 transition-all duration-300"
               style={{
-                background: i <= currentStepIndex ? '#FFC100' : 'rgba(255, 255, 255, 0.1)',
+                background: (showRegistration || i <= currentStepIndex) ? '#FFC100' : 'rgba(255, 255, 255, 0.1)',
                 borderRadius: '2px',
-                opacity: i <= currentStepIndex ? 1 : 0.3
+                opacity: (showRegistration || i <= currentStepIndex) ? 1 : 0.3
               }}
             />
           ))}
@@ -650,13 +694,101 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
         {/* Header - Top Left */}
         <div className="absolute left-[66px] top-[79px]">
           <div className="font-['Plus_Jakarta_Sans'] font-semibold text-[14px] leading-[18px] text-white mb-2">
-            Passo {currentStepIndex + 1} de {totalSteps}
+            {showRegistration ? `Passo ${totalWithReg} de ${totalWithReg}` : `Passo ${currentStepIndex + 1} de ${totalWithReg}`}
           </div>
           <div className="font-['Plus_Jakarta_Sans'] font-semibold text-[14px] text-white/20">
-            {currentQuestion.section}
+            {showRegistration ? 'Criar Acesso' : currentQuestion.section}
           </div>
         </div>
 
+        {showRegistration ? (
+        /* REGISTRATION STEP */
+        <div className="flex flex-1 mt-[160px] px-[66px] gap-20">
+            <div className="w-1/3 pt-10">
+                <div className="font-['Plus_Jakarta_Sans'] font-semibold text-[12px] text-white/80 uppercase tracking-wider mb-4">
+                    Último Passo
+                </div>
+                <h2 className="font-['Plus_Jakarta_Sans'] font-semibold text-[24px] leading-[1.2] text-white/50 mb-6">
+                    Crie seu acesso permanente
+                </h2>
+                <p className="font-['Plus_Jakarta_Sans'] font-medium text-[14px] leading-normal text-white/30">
+                    Cadastre seu email e uma senha para acessar seu painel a qualquer momento, sem precisar do link.
+                </p>
+            </div>
+
+            <div className="flex-1 pt-12 max-w-[500px]">
+                <div className="font-['Plus_Jakarta_Sans'] font-semibold text-[12px] text-white mb-6">
+                    Seus Dados de Acesso
+                </div>
+
+                <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
+                    <div className="flex flex-col gap-5">
+                        <div>
+                            <label className="block text-[11px] font-semibold text-[#888] mb-2 uppercase tracking-wider">Email</label>
+                            <input 
+                                type="email" 
+                                value={regEmail}
+                                onChange={(e) => { setRegEmail(e.target.value); setRegError(''); }}
+                                className={`w-full bg-[#161616] border ${regError ? 'border-red-500/50' : 'border-[#333]'} rounded-xl px-5 py-4 text-[15px] text-white outline-none focus:border-[#FFC100] transition-all placeholder-[#444]`}
+                                placeholder="seu@email.com"
+                                autoFocus
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[11px] font-semibold text-[#888] mb-2 uppercase tracking-wider">Senha</label>
+                            <input 
+                                type="password" 
+                                value={regPassword}
+                                onChange={(e) => { setRegPassword(e.target.value); setRegError(''); }}
+                                className={`w-full bg-[#161616] border ${regError ? 'border-red-500/50' : 'border-[#333]'} rounded-xl px-5 py-4 text-[15px] text-white outline-none focus:border-[#FFC100] transition-all placeholder-[#444]`}
+                                placeholder="Mínimo 6 caracteres"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[11px] font-semibold text-[#888] mb-2 uppercase tracking-wider">Confirmar Senha</label>
+                            <input 
+                                type="password" 
+                                value={regConfirm}
+                                onChange={(e) => { setRegConfirm(e.target.value); setRegError(''); }}
+                                className={`w-full bg-[#161616] border ${regError ? 'border-red-500/50' : 'border-[#333]'} rounded-xl px-5 py-4 text-[15px] text-white outline-none focus:border-[#FFC100] transition-all placeholder-[#444]`}
+                                placeholder="Repita a senha"
+                            />
+                        </div>
+
+                        {regError && (
+                            <div className="flex items-center gap-2">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="#EF4444" strokeWidth="2"/>
+                                    <path d="M12 8V12" stroke="#EF4444" strokeWidth="2" strokeLinecap="round"/>
+                                    <circle cx="12" cy="16" r="1" fill="#EF4444"/>
+                                </svg>
+                                <span className="text-red-500 text-[12px] font-medium">{regError}</span>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+
+                <div className="flex items-center gap-4 mt-12">
+                    <button
+                        onClick={handleRegistrationSubmit}
+                        disabled={regLoading}
+                        className={`flex items-center justify-center gap-[10px] bg-[#FFC100] rounded-full h-[50px] px-8 transition-colors ${regLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#ffdb65]'}`}
+                    >
+                        <span className="font-['Plus_Jakarta_Sans'] font-bold text-[14px] text-black">
+                            {regLoading ? 'Criando...' : 'Criar Acesso e Entrar'}
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => setShowRegistration(false)}
+                        className="font-['Plus_Jakarta_Sans'] font-semibold text-[14px] text-white/50 hover:text-white transition-colors px-4"
+                    >
+                        Voltar
+                    </button>
+                </div>
+            </div>
+        </div>
+        ) : (
+        /* ONBOARDING QUESTIONS */
         <div className="flex flex-1 mt-[160px] px-[66px] gap-20">
             {/* Left Column - Context */}
             <div className="w-1/3 pt-10">
@@ -706,13 +838,11 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                         className={`flex items-center justify-center gap-[10px] bg-[#FFC100] rounded-full h-[50px] px-8 transition-colors ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#ffdb65]'}`}
                     >
                         <span className="font-['Plus_Jakarta_Sans'] font-bold text-[14px] text-black">
-                            {isSubmitting ? 'Finalizando...' : (currentStepIndex === totalSteps - 1 ? 'Finalizar' : 'Continuar')}
+                            {currentStepIndex === totalSteps - 1 ? 'Próximo' : 'Continuar'}
                         </span>
-                        {!isSubmitting && (
-                          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                              <path d="M6.75 3.75L12 9L6.75 14.25" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        )}
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <path d="M6.75 3.75L12 9L6.75 14.25" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
                     </button>
                     
                     {currentStepIndex > 0 && (
@@ -726,6 +856,7 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                 </div>
             </div>
         </div>
+        )}
 
         {/* Close/Back - Bottom Left */}
         <button

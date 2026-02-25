@@ -11,6 +11,8 @@ model Client {
   id        String   @id @default(uuid())
   name      String
   hash      String   @unique
+  email     String?  @unique
+  password  String?
   data      String // JSON string containing all dashboard data
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
