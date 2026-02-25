@@ -1,7 +1,7 @@
 import React from 'react';
 import boltIcon from '../../assets/bolt.svg';
 
-const Sidebar = ({ activePage = 'home', onNavigate }) => {
+const Sidebar = ({ activePage = 'home', onNavigate, isOwner = true }) => {
   return (
     <div 
       className="fixed left-[10px] top-[14px] hidden md:flex flex-col items-center py-5 z-50"
@@ -69,6 +69,25 @@ const Sidebar = ({ activePage = 'home', onNavigate }) => {
             <circle cx="17" cy="18" r="2" fill={activePage === 'engenhariaMenu' ? '#F5A623' : '#959387'} fillOpacity="0.5"/>
           </svg>
         </div>
+
+        {isOwner && (
+          <>
+            <div className="w-[34.61px] h-0 border-b border-white/10" />
+
+            {/* Equipe / Team Support */}
+            <div 
+              className={`w-[44px] h-[44px] rounded-[10px] flex items-center justify-center cursor-pointer transition-colors ${activePage === 'equipe' ? 'bg-[#252527]' : 'hover:bg-[#1E1E1E]'}`}
+              title="Equipe e Acessos"
+              onClick={() => onNavigate && onNavigate('equipe')}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke={activePage === 'equipe' ? '#F5A623' : '#959387'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 21V19C6 17.8954 6.89543 17 8 17H16C17.1046 17 18 17.8954 18 19V21" stroke={activePage === 'equipe' ? '#F5A623' : '#959387'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </>
+        )}
+
       </div>
       </div>
 

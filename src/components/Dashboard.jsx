@@ -15,6 +15,7 @@ import ProximoNivelIcon from './dashboard/ProximoNivelIcon';
 import RankingGeralIcon from './dashboard/RankingGeralIcon';
 import MatrizPreco from './dashboard/MatrizPreco';
 import EngenhariaMenu from './dashboard/EngenhariaMenu';
+import Equipe from './dashboard/Equipe';
 
 const Dashboard = () => {
   /* MOVED TO CONTEXT */
@@ -24,7 +25,7 @@ const Dashboard = () => {
   return (
     <div className="relative w-full min-h-screen bg-[#1B1B1D] font-jakarta text-white select-none overflow-x-hidden overflow-y-auto">
       
-      <Sidebar activePage={activePage} onNavigate={setActivePage} />
+      <Sidebar activePage={activePage} onNavigate={setActivePage} isOwner={dashboardData.user?.isOwner !== false} />
 
       {activePage === 'fichaTecnica' ? (
         <div className="ml-0 md:ml-[85px] flex-1 min-h-0">
@@ -37,6 +38,10 @@ const Dashboard = () => {
       ) : activePage === 'engenhariaMenu' ? (
         <div className="ml-0 md:ml-[85px] flex-1 min-h-0">
           <EngenhariaMenu />
+        </div>
+      ) : activePage === 'equipe' ? (
+        <div className="ml-0 md:ml-[85px] flex-1 min-h-0">
+          <Equipe />
         </div>
       ) : (
       <>

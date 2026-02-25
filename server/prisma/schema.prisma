@@ -8,12 +8,25 @@ datasource db {
 }
 
 model Client {
+  id          String       @id @default(uuid())
+  name        String
+  hash        String       @unique
+  email       String?      @unique
+  password    String?
+  data        String // JSON string containing all dashboard data
+  teamMembers TeamMember[] @relation("ClientTeam")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model TeamMember {
   id        String   @id @default(uuid())
   name      String
   hash      String   @unique
-  email     String?  @unique
-  password  String?
-  data      String // JSON string containing all dashboard data
+  email     String   @unique
+  password  String
+  role      String   @default("Gerente")
+  clientId  String
+  client    Client   @relation("ClientTeam", fields: [clientId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }

@@ -103,7 +103,7 @@ router.post('/client/register', async (req, res) => {
   }
 });
 
-// Client Login
+// Client Login (Checks both Client and TeamMember)
 router.post('/client/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -111,17 +111,26 @@ router.post('/client/login', async (req, res) => {
       return res.status(400).json({ error: 'Email e senha são obrigatórios' });
     }
 
-    const client = await prisma.client.findUnique({ where: { email } });
-    if (!client || !client.password) {
+    // Checking if the user is a Client (Owner)
+    let user = await prisma.client.findUnique({ where: { email } });
+    let isOwner = true;
+
+    // If not a Client, check if it's a TeamMember (Manager)
+    if (!user) {
+      user = await prisma.teamMember.findUnique({ where: { email } });
+      isOwner = false;
+    }
+
+    if (!user || !user.password) {
       return res.status(401).json({ error: 'Email ou senha incorretos' });
     }
 
-    const valid = await bcrypt.compare(password, client.password);
+    const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return res.status(401).json({ error: 'Email ou senha incorretos' });
     }
 
-    res.json({ success: true, hash: client.hash, name: client.name });
+    res.json({ success: true, hash: user.hash, name: user.name, isOwner });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro ao fazer login' });
@@ -136,14 +145,46 @@ router.post('/client/login', async (req, res) => {
 router.get('/client/:hash', async (req, res) => {
   try {
     const { hash } = req.params;
-    const client = await prisma.client.findUnique({
-      where: { hash }
-    });
+    
+    // Check if the hash matches a Client (Owner)
+    let client = await prisma.client.findUnique({ where: { hash } });
+    let isOwner = true;
+    let teamMember = null;
+
+    // Check if the hash matches a TeamMember (Manager)
+    if (!client) {
+      teamMember = await prisma.teamMember.findUnique({ 
+        where: { hash },
+        include: { client: true }
+      });
+      if (teamMember) {
+        client = teamMember.client;
+        isOwner = false;
+      }
+    }
 
     if (!client) return res.status(404).json({ error: 'Cliente não encontrado' });
 
-    res.json(JSON.parse(client.data));
-  } catch {
+    let dashboardData = JSON.parse(client.data);
+
+    // If it's a team member, override the `user` property in the payload 
+    // to show the manager's name and role instead of the owner's.
+    if (!isOwner && teamMember) {
+      dashboardData.user = {
+        name: teamMember.name,
+        initials: teamMember.name.substring(0, 2).toUpperCase(),
+        role: teamMember.role,
+        isOwner: false,
+      };
+    } else {
+      if (dashboardData.user) {
+        dashboardData.user.isOwner = true;
+      }
+    }
+
+    res.json(dashboardData);
+  } catch (error) {
+    console.error("Error loading data:", error);
     res.status(500).json({ error: 'Erro ao carregar dados' });
   }
 });
@@ -152,17 +193,39 @@ router.get('/client/:hash', async (req, res) => {
 router.post('/client/:hash/sync', async (req, res) => {
   try {
     const { hash } = req.params;
-    const newData = req.body;
+    let newData = req.body;
 
+    // Resolve who is saving
+    let clientIdToUpdate = null;
     const client = await prisma.client.findUnique({ where: { hash } });
-    if (!client) return res.status(404).json({ error: 'Cliente não encontrado' });
-
-    // Merge logic could be here, but for now we trust the client's latest state (Last Writer Wins)
-    // In a real app we'd fetch first, merge, then save.
     
-    // Simplification: Update the data blob
+    if (client) {
+      clientIdToUpdate = client.id;
+    } else {
+      const teamMember = await prisma.teamMember.findUnique({ where: { hash } });
+      if (teamMember) {
+        clientIdToUpdate = teamMember.clientId;
+      }
+    }
+
+    if (!clientIdToUpdate) return res.status(404).json({ error: 'Credenciais inválidas para salvar dados.' });
+
+    // Since a TeamMember sends their overridden user info, we SHOULD NOT overwrite the true Owner's profile inside client.data.
+    // If we want to be safe, we fetch the current saved data first and preserve the original `user` section.
+    const currentSavedClient = await prisma.client.findUnique({ where: { id: clientIdToUpdate } });
+    if (currentSavedClient && currentSavedClient.data) {
+      try {
+        const parsedData = JSON.parse(currentSavedClient.data);
+        if (parsedData.user && (!newData.user || newData.user.isOwner === false)) {
+            newData.user = parsedData.user; // preserve owner profile
+        }
+      } catch (e) {
+        console.error("Error parsing existing client data before save:", e);
+      }
+    }
+
     await prisma.client.update({
-      where: { hash },
+      where: { id: clientIdToUpdate },
       data: {
         data: JSON.stringify(newData)
       }
@@ -181,8 +244,21 @@ router.put('/client/:hash/profile', async (req, res) => {
     const { hash } = req.params;
     const { name, password } = req.body;
 
+    let userToUpdate = null;
+    let isClient = true;
+
     const client = await prisma.client.findUnique({ where: { hash } });
-    if (!client) return res.status(404).json({ error: 'Cliente não encontrado' });
+    if (client) {
+      userToUpdate = client;
+    } else {
+      const teamMember = await prisma.teamMember.findUnique({ where: { hash } });
+      if (teamMember) {
+        userToUpdate = teamMember;
+        isClient = false;
+      }
+    }
+
+    if (!userToUpdate) return res.status(404).json({ error: 'Usuário não encontrado' });
 
     let updateData = {};
 
@@ -191,32 +267,147 @@ router.put('/client/:hash/profile', async (req, res) => {
       updateData.password = await bcrypt.hash(password, 10);
     }
 
-    // Update name in raw DB field and inside the JSON blob
     if (name && name.trim() !== '') {
       updateData.name = name;
-      try {
-        const clientData = JSON.parse(client.data);
-        if (clientData.user) {
-          clientData.user.name = name;
-          clientData.user.initials = name.substring(0, 2).toUpperCase();
+      
+      // If it's the owner, also update the data JSON profile block
+      if (isClient) {
+        try {
+          const clientData = JSON.parse(userToUpdate.data);
+          if (clientData.user) {
+            clientData.user.name = name;
+            clientData.user.initials = name.substring(0, 2).toUpperCase();
+          }
+          updateData.data = JSON.stringify(clientData);
+        } catch (parseError) {
+          console.error("Error parsing client data:", parseError);
         }
-        updateData.data = JSON.stringify(clientData);
-      } catch (parseError) {
-        console.error("Error parsing client data:", parseError);
       }
     }
 
     if (Object.keys(updateData).length > 0) {
-      await prisma.client.update({
-        where: { hash },
-        data: updateData
-      });
+      if (isClient) {
+        await prisma.client.update({ where: { hash }, data: updateData });
+      } else {
+        await prisma.teamMember.update({ where: { hash }, data: updateData });
+      }
     }
 
     res.json({ success: true, message: 'Perfil atualizado com sucesso' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro ao atualizar o perfil' });
+  }
+});
+
+
+// ========================
+// TEAM MANAGEMENT ROUTES
+// ========================
+
+// List Team Members
+router.get('/client/:hash/team', async (req, res) => {
+  try {
+    const { hash } = req.params;
+    const client = await prisma.client.findUnique({ 
+      where: { hash },
+      include: { teamMembers: true }
+    });
+    
+    // Only the owner can list team members
+    if (!client) return res.status(403).json({ error: 'Acesso negado' });
+
+    // Exclude passwords from response
+    const safeMembers = client.teamMembers.map(tm => {
+      const { password: _password, ...safeTm } = tm;
+      return safeTm;
+    });
+
+    res.json(safeMembers);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao listar equipe' });
+  }
+});
+
+// Create Team Member
+router.post('/client/:hash/team', async (req, res) => {
+  try {
+    const { hash } = req.params;
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Nome, email e senha são obrigatórios' });
+    }
+
+    const client = await prisma.client.findUnique({ 
+      where: { hash },
+      include: { teamMembers: true }
+    });
+    
+    // Only owner can create
+    if (!client) return res.status(403).json({ error: 'Acesso negado' });
+
+    // Enforce logic rule: max 3 sub-accounts
+    if (client.teamMembers.length >= 3) {
+      return res.status(400).json({ error: 'Limite de 3 contas atingido' });
+    }
+
+    // Check if email already in use globally across both tables
+    const existingClient = await prisma.client.findUnique({ where: { email } });
+    const existingMember = await prisma.teamMember.findUnique({ where: { email } });
+    
+    if (existingClient || existingMember) {
+      return res.status(409).json({ error: 'Este email já está em uso' });
+    }
+
+    const newHash = require('crypto').randomBytes(16).toString('hex');
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newMember = await prisma.teamMember.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        hash: newHash,
+        clientId: client.id
+      }
+    });
+
+    const { password: _, ...safeMember } = newMember;
+    res.json({ success: true, member: safeMember });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao criar conta' });
+  }
+});
+
+// Delete Team Member
+router.delete('/client/:hash/team/:memberId', async (req, res) => {
+  try {
+    const { hash, memberId } = req.params;
+
+    const client = await prisma.client.findUnique({ where: { hash } });
+    if (!client) return res.status(403).json({ error: 'Acesso negado' });
+
+    // Ensure the member belongs to this client
+    const member = await prisma.teamMember.findFirst({
+      where: { id: memberId, clientId: client.id }
+    });
+
+    if (!member) {
+      return res.status(404).json({ error: 'Membro não encontrado' });
+    }
+
+    await prisma.teamMember.delete({
+      where: { id: memberId }
+    });
+
+    res.json({ success: true, message: 'Membro removido' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao remover membro' });
   }
 });
 
