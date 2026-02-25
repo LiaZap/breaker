@@ -38,6 +38,8 @@ export const DashboardProvider = ({ children }) => {
   };
 
   const [dashboardData, setDashboardData] = useState(initialData);
+  const [clientDataLoaded, setClientDataLoaded] = useState(false);
+  const [clientDataError, setClientDataError] = useState(false);
 
   // Load Client Data if Hash exists
   React.useEffect(() => {
@@ -81,9 +83,12 @@ export const DashboardProvider = ({ children }) => {
 
             return merged;
           });
+          setClientDataLoaded(true);
         })
         .catch(err => {
           console.error("Failed to load client data from API", err);
+          setClientDataError(true);
+          setClientDataLoaded(true);
         });
     }
   }, []);
@@ -476,7 +481,7 @@ export const DashboardProvider = ({ children }) => {
   };
 
   return (
-    <DashboardContext.Provider value={{ dashboardData, updateDashboardData }}>
+    <DashboardContext.Provider value={{ dashboardData, updateDashboardData, clientDataLoaded, clientDataError }}>
       {children}
     </DashboardContext.Provider>
   );

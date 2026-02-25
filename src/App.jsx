@@ -9,7 +9,7 @@ import AdminPanel from './components/admin/AdminPanel';
 import { useDashboard } from './context/DashboardContext';
 
 function App() {
-  const { dashboardData } = useDashboard();
+  const { dashboardData, clientDataError } = useDashboard();
   const [currentPage, setCurrentPage] = useState('loading');
 
   useEffect(() => {
@@ -22,6 +22,13 @@ function App() {
       setCurrentPage('client-login');
     }
   }, []);
+
+  // If API returns error for the hash, redirect to login
+  useEffect(() => {
+    if (clientDataError && currentPage === 'splash') {
+      window.location.href = window.location.pathname;
+    }
+  }, [clientDataError, currentPage]);
 
   const handleSplashComplete = () => {
     if (dashboardData?.formData && Object.keys(dashboardData.formData).length > 0) {
