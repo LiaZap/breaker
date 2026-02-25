@@ -2,31 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 
 // ============ MOCK DATA ============
-const initialItems = [
-  // ESTRELAS (High Sales, High Margin)
-  { id: 1, name: "Hot Roll Salmão", sales: 85, price: 45.90, cost: 12.00, category: 'Sushi' }, // Margin: 33.90
-  { id: 2, name: "Temaki Tradicional", sales: 72, price: 28.50, cost: 8.00, category: 'Sushi' }, // Margin: 20.50
-  { id: 3, name: "Yakisoba Clássico", sales: 90, price: 38.00, cost: 10.00, category: 'Pratos Quentes' }, // Margin: 28.00
-  { id: 4, name: "Combinado da Casa", sales: 65, price: 85.00, cost: 35.00, category: 'Combinados' }, // Margin: 50.00
-  { id: 5, name: "Gyoza Suíno", sales: 78, price: 22.00, cost: 6.00, category: 'Entradas' }, // Margin: 16.00
-
-  // POPULARES (High Sales, Low Margin) - "Burros de Carga"
-  { id: 6, name: "Rolinho Primavera", sales: 95, price: 12.00, cost: 8.00, category: 'Entradas' }, // Margin: 4.00
-  { id: 7, name: "Água Mineral", sales: 120, price: 6.00, cost: 3.00, category: 'Bebidas' }, // Margin: 3.00
-  { id: 8, name: "Refrigerante Lata", sales: 110, price: 7.00, cost: 4.50, category: 'Bebidas' }, // Margin: 2.50
-  { id: 9, name: "Missoshiru", sales: 68, price: 10.00, cost: 7.00, category: 'Entradas' }, // Margin: 3.00
-
-  // POTENCIAIS (Low Sales, High Margin) - "Quebra-Cabeças"
-  { id: 10, name: "Sashimi Toro", sales: 15, price: 120.00, cost: 40.00, category: 'Sashimi' }, // Margin: 80.00
-  { id: 11, name: "Lagosta Gratinada", sales: 8, price: 150.00, cost: 60.00, category: 'Especiais' }, // Margin: 90.00
-  { id: 12, name: "Saquê Premium", sales: 12, price: 89.00, cost: 30.00, category: 'Bebidas' }, // Margin: 59.00
-  { id: 13, name: "Vieiras Trufadas", sales: 20, price: 95.00, cost: 35.00, category: 'Especiais' }, // Margin: 60.00
-
-  // CRÍTICOS (Low Sales, Low Margin) - "Cachorros"
-  { id: 14, name: "Tempurá Legumes", sales: 10, price: 18.00, cost: 14.00, category: 'Entradas' }, // Margin: 4.00
-  { id: 15, name: "Chá Verde", sales: 5, price: 8.00, cost: 6.00, category: 'Bebidas' }, // Margin: 2.00
-  { id: 16, name: "Edamame Simples", sales: 18, price: 20.00, cost: 16.00, category: 'Entradas' }, // Margin: 4.00
-];
+// Removed initialItems as it was unused
 
 const CATEGORIES = {
   ESTRELA: { label: 'Estrelas', color: '#00C8F4', description: 'Alta popularidade e alta rentabilidade.', icon: '★' },
@@ -40,13 +16,6 @@ const MatrizPreco = () => {
   const [activeCategory, setActiveCategory] = useState(null); // Filter by click on chips (classification)
   const [selectedMenuCategory, setSelectedMenuCategory] = useState(null); // null = show all, or a specific category
 
-  // Use Real Data or Fallback to Initial Items if empty (for demo purposes, or better: just real data if we want to be strict)
-  // User request: "has to be real dishes". So we should prioritize real data.
-  // However, to prevent a blank screen while development/empty state, we can keep using initialItems ONLY if menuEngineering is strictly empty AND we are in "Simulação" or similar status?
-  // Let's rely on dashboardData.menuEngineering. If it's empty, the user will see an empty chart, prompting them to upload.
-  // But wait, the user currently sees the mock data and wants to see REAL data.
-  // I will check if there is data.
-  const displayItems = dashboardData.menuEngineering || []; 
 
   // Helper to parse currency safely
   const parseCurrency = (val) => {
@@ -71,8 +40,8 @@ const MatrizPreco = () => {
       return parseInt(str, 10) || 0;
   };
 
-  // 1. Calculate Metrics
   const itemsWithMetrics = useMemo(() => {
+    const displayItems = dashboardData.menuEngineering || []; 
     return displayItems.map(item => ({
       ...item,
       category: item.category || 'Geral',
@@ -81,7 +50,7 @@ const MatrizPreco = () => {
       cost: parseCurrency(item.cost),
       margin: parseCurrency(item.price) - parseCurrency(item.cost),
     }));
-  }, [displayItems]);
+  }, [dashboardData.menuEngineering]);
 
   const uniqueMenuCategories = useMemo(() => {
     const cats = new Set(itemsWithMetrics.map(item => item.category));

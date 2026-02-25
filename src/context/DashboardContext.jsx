@@ -91,6 +91,7 @@ export const DashboardProvider = ({ children }) => {
           setClientDataLoaded(true);
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Helper to parse "R$ 1.234,56" -> 1234.56
@@ -415,7 +416,7 @@ export const DashboardProvider = ({ children }) => {
         },
         breakEven: {
             // How much of the break_even have we hit? (E.g. hit 100% when revenue == breakEven)
-            percentage: breakEvenValue > 0 ? Math.min(Math.round((currentRevenue / breakEvenValue) * 100), 100) : 0, 
+            percentage: breakEvenValue === 0 && currentRevenue > 0 ? 100 : (breakEvenValue > 0 ? Math.min(Math.round((currentRevenue / breakEvenValue) * 100), 100) : 0), 
             current: formatMoney(breakEvenValue),
             min: "0",
             max: formatMoney(Math.max(currentRevenue, breakEvenValue) * 1.5), 

@@ -175,6 +175,50 @@ router.post('/client/:hash/sync', async (req, res) => {
   }
 });
 
+// Update Profile
+router.put('/client/:hash/profile', async (req, res) => {
+  try {
+    const { hash } = req.params;
+    const { name, password } = req.body;
+
+    const client = await prisma.client.findUnique({ where: { hash } });
+    if (!client) return res.status(404).json({ error: 'Cliente não encontrado' });
+
+    let updateData = {};
+
+    // Generate new hash if password is provided
+    if (password && password.trim() !== '') {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+
+    // Update name in raw DB field and inside the JSON blob
+    if (name && name.trim() !== '') {
+      updateData.name = name;
+      try {
+        const clientData = JSON.parse(client.data);
+        if (clientData.user) {
+          clientData.user.name = name;
+          clientData.user.initials = name.substring(0, 2).toUpperCase();
+        }
+        updateData.data = JSON.stringify(clientData);
+      } catch (parseError) {
+        console.error("Error parsing client data:", parseError);
+      }
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await prisma.client.update({
+        where: { hash },
+        data: updateData
+      });
+    }
+
+    res.json({ success: true, message: 'Perfil atualizado com sucesso' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao atualizar o perfil' });
+  }
+});
 
 // ========================
 // MENU ENGINEERING ROUTES

@@ -1,6 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
+import ProfileModal from './ProfileModal';
+import { useDashboard } from '../../context/DashboardContext';
 
 const DashboardHeader = ({ data }) => {
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const { updateDashboardData } = useDashboard();
+  
+  const hash = new URLSearchParams(window.location.search).get('hash');
+
+  const handleLogout = () => {
+    window.location.href = window.location.pathname; // Clear the hash
+  };
+
+  const handleNameUpdated = (newName) => {
+    // Update local context so UI reflects immediately
+    updateDashboardData({
+      user: {
+        ...data.user,
+        name: newName,
+        initials: newName.substring(0, 2).toUpperCase()
+      }
+    });
+  };
+
   return (
     <div className="flex flex-wrap justify-between items-center mb-4 md:mb-8 py-2 md:py-[14px] gap-y-3">
       {/* Left - Restaurant Info */}
@@ -27,7 +49,10 @@ const DashboardHeader = ({ data }) => {
       {/* Right - User Profile */}
       <div className="flex items-center gap-4 md:gap-8">
 
-        <div className="flex items-center gap-3 md:gap-4 border-l border-[#333] pl-3 md:pl-6">
+        <button 
+          onClick={() => setIsProfileModalOpen(true)}
+          className="flex items-center gap-3 md:gap-4 border-l border-[#333] pl-3 md:pl-6 hover:opacity-80 transition-opacity cursor-pointer focus:outline-none"
+        >
           <div className="flex items-center gap-[8px]">
             <div className="w-[36px] h-[36px] md:w-[40px] md:h-[40px] rounded-full bg-[#FDD688] flex items-center justify-center overflow-hidden">
                {data.user?.name ? (
@@ -36,17 +61,26 @@ const DashboardHeader = ({ data }) => {
                  <span className="text-black font-bold text-[14px]">{data.user?.initials || 'U'}</span>
                )}
             </div>
-            <div className="hidden sm:flex flex-col">
-              <span className="font-medium text-[12px] text-[#CACACA]">{data.user.name}</span>
-              <span className="font-medium text-[9px] text-[#A0A0A0]">{data.user.role}</span>
+            <div className="hidden sm:flex flex-col text-left">
+              <span className="font-medium text-[12px] text-[#CACACA]">{data.user?.name || 'Usuário'}</span>
+              <span className="font-medium text-[9px] text-[#A0A0A0]">{data.user?.role || 'Acesso Cliente'}</span>
             </div>
             <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
               <path d="M4.5 6.75L9 11.25L13.5 6.75" stroke="#959387" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </div>
-        </div>
+        </button>
 
       </div>
+
+      <ProfileModal 
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        currentName={data.user?.name}
+        hash={hash}
+        onLogout={handleLogout}
+        onNameUpdated={handleNameUpdated}
+      />
     </div>
   );
 };
