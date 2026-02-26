@@ -16,16 +16,26 @@ import RankingGeralIcon from './dashboard/RankingGeralIcon';
 import MatrizPreco from './dashboard/MatrizPreco';
 import EngenhariaMenu from './dashboard/EngenhariaMenu';
 import Equipe from './dashboard/Equipe';
+import OnboardingForm from './OnboardingForm';
 
 const Dashboard = () => {
   /* MOVED TO CONTEXT */
   const { dashboardData } = useDashboard();
   const [activePage, setActivePage] = useState('home');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const handleNavigate = (page) => {
+    if (page === 'editOnboarding') {
+      setShowOnboarding(true);
+    } else {
+      setActivePage(page);
+    }
+  };
 
   return (
     <div className="relative w-full min-h-screen bg-[#1B1B1D] font-jakarta text-white select-none overflow-x-hidden overflow-y-auto">
       
-      <Sidebar activePage={activePage} onNavigate={setActivePage} isOwner={dashboardData.user?.isOwner !== false} />
+      <Sidebar activePage={activePage} onNavigate={handleNavigate} isOwner={dashboardData.user?.isOwner !== false} />
 
       {activePage === 'fichaTecnica' ? (
         <div className="ml-0 md:ml-[85px] flex-1 min-h-0">
@@ -144,10 +154,23 @@ const Dashboard = () => {
 
             {/* Gauge Chart */}
             <div className="w-full mb-2">
-              <BreakEvenGraphic 
-                percentage={dashboardData.breakEven.percentage}
-                value={`R$ ${dashboardData.breakEven.current}`}
-              />
+              {dashboardData.breakEven.hasCmvData ? (
+                <BreakEvenGraphic 
+                  percentage={dashboardData.breakEven.percentage}
+                  value={`R$ ${dashboardData.breakEven.current}`}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 px-4">
+                  <div className="w-12 h-12 rounded-full bg-[#1F1F1F] flex items-center justify-center border border-[#2F2F2F] mb-3">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5">
+                      <path d="M12 2v20M2 12h20" strokeLinecap="round"/>
+                    </svg>
+                  </div>
+                  <p className="text-[10px] text-[#7E7E7E] text-center leading-relaxed">
+                    Preencha suas <span className="text-[#FF9406] font-semibold">Fichas Técnicas</span> para calcular o Ponto de Equilíbrio.
+                  </p>
+                </div>
+              )}
             </div>
 
 
@@ -186,6 +209,16 @@ const Dashboard = () => {
         </div>
       </div>
       </>
+      )}
+
+      {/* Onboarding Edit Modal */}
+      {showOnboarding && (
+        <div className="fixed inset-0 z-100 bg-black/60 backdrop-blur-sm">
+          <OnboardingForm 
+            onClose={() => setShowOnboarding(false)} 
+            onComplete={() => setShowOnboarding(false)}
+          />
+        </div>
       )}
     </div>
   );

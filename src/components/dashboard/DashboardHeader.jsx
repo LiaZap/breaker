@@ -29,8 +29,12 @@ const DashboardHeader = ({ data }) => {
       <div className="flex items-center gap-4 md:gap-6">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-[6px]">
-            <div className="w-[36px] h-[36px] md:w-[40px] md:h-[40px] rounded-full bg-[#344036] flex items-center justify-center">
-               <div className="w-[18px] h-[18px] md:w-[20px] md:h-[20px] rounded-full border border-white/20" />
+            <div className="w-[36px] h-[36px] md:w-[40px] md:h-[40px] rounded-full bg-[#344036] flex items-center justify-center overflow-hidden">
+               {data.restaurant.logo ? (
+                 <img src={data.restaurant.logo} alt={data.restaurant.name} className="w-full h-full object-cover" />
+               ) : (
+                 <div className="w-[18px] h-[18px] md:w-[20px] md:h-[20px] rounded-full border border-white/20" />
+               )}
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -55,8 +59,10 @@ const DashboardHeader = ({ data }) => {
         >
           <div className="flex items-center gap-[8px]">
             <div className="w-[36px] h-[36px] md:w-[40px] md:h-[40px] rounded-full bg-[#FDD688] flex items-center justify-center overflow-hidden">
-               {data.user?.name ? (
-                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.name)}&background=FDD688&color=000&size=100`} alt={data.user.initials} className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
+               {data.user?.photo ? (
+                 <img src={data.user.photo} alt={data.user.name} className="w-full h-full object-cover" />
+               ) : data.user?.name && data.user.name !== "Usuário" ? (
+                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(data.user.name)}&background=FDD688&color=000&size=100`} alt={data.user.initials} className="w-full h-full object-cover" />
                ) : (
                  <span className="text-black font-bold text-[14px]">{data.user?.initials || 'U'}</span>
                )}

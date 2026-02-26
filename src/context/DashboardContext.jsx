@@ -26,9 +26,9 @@ export const DashboardProvider = ({ children }) => {
     },
     menuEngineering: [],
     cards: {
-        moneyOnTable: { total: "0", lost: "0", recovered: "0", percentage: "0%" },
+        moneyOnTable: { total: "0,00", items: [], hasData: false },
         technicalSheets: [
-            { label: 'CMV real', value: '0%' },
+            { label: 'CMV Teórico', value: '0%' },
             { label: 'Fichas Desatualizadas', value: '0' },
             { label: 'Produtos Sem Ficha', value: '0' }
         ],
@@ -63,7 +63,7 @@ export const DashboardProvider = ({ children }) => {
               const getVal = (labelMatch) => dbTs.find(t => t.label?.includes(labelMatch))?.value || '0';
               
               merged.cards.technicalSheets = [
-                { label: 'CMV real', value: getVal('CMV real') || getVal('CMV Global') },
+                { label: 'CMV Teórico', value: getVal('CMV Teórico') || getVal('CMV real') || getVal('CMV Global') },
                 { label: 'Fichas Desatualizadas', value: getVal('Desatualizadas') },
                 { label: 'Produtos Sem Ficha', value: getVal('Sem Ficha') }
               ];
@@ -261,6 +261,11 @@ export const DashboardProvider = ({ children }) => {
         });
     }
 
+    // Other Fixed Costs
+    if (formData.other_fixed_costs && Array.isArray(formData.other_fixed_costs)) {
+        formData.other_fixed_costs.forEach(item => addCost(item.value));
+    }
+
     // Personnel Costs
     let personnelCosts = 0;
     
@@ -301,11 +306,11 @@ export const DashboardProvider = ({ children }) => {
 
     const totalFixedCosts = fixedCosts + personnelCosts;
 
-    // Default variable costs to 35% of Revenue for simulation if real data is missing
-    let cmvPercentage = 0.35;
+    // CMV Teórico: only from fichas técnicas (menuEngineering data)
+    // If no fichas exist, CMV = 0 (not 35% default)
+    let cmvPercentage = 0;
+    let hasCmvData = false;
     
-    // If we have actual menu engineering data, we can calculate the real overall CMV %
-    // by summing (sales * cost) and dividing by (sales * price)
     if (dashboardData.menuEngineering && dashboardData.menuEngineering.length > 0) {
         let totalSalesRevenue = 0;
         let totalSalesCost = 0;
@@ -318,10 +323,28 @@ export const DashboardProvider = ({ children }) => {
         });
         if (totalSalesRevenue > 0) {
             cmvPercentage = totalSalesCost / totalSalesRevenue;
+            hasCmvData = true;
         }
     }
 
-    const variableCosts = currentRevenue * cmvPercentage;
+    // Card machine fees (Débito + Crédito) — variable cost
+    let cardFeePercentage = 0;
+    if (formData.fees_cards && Array.isArray(formData.fees_cards)) {
+        let totalRates = 0;
+        let count = 0;
+        formData.fees_cards.forEach(card => {
+            const debit = parseFloat(String(card.debit_rate || '0').replace(',', '.').replace('%', '')) || 0;
+            const credit = parseFloat(String(card.credit_rate || '0').replace(',', '.').replace('%', '')) || 0;
+            totalRates += (debit + credit) / 2; // average of debit+credit per operator
+            count++;
+        });
+        if (count > 0) cardFeePercentage = totalRates / count / 100;
+    }
+
+    // Variable costs = Card fees + Taxes (Simples) + CMV (only if fichas filled)
+    const cardFeeCost = currentRevenue * cardFeePercentage;
+    const cmvCost = currentRevenue * cmvPercentage;
+    const variableCosts = cardFeeCost + cmvCost;
 
     // 2. METRICS CALCULATIONS
     
@@ -359,12 +382,51 @@ export const DashboardProvider = ({ children }) => {
         taxCostSimples = currentRevenue * percentTaxSimples;
     }
 
-    const totalCosts = totalFixedCosts + variableCosts + taxCostSimples;
+    const totalVariableCosts = variableCosts + taxCostSimples;
+    const totalCosts = totalFixedCosts + totalVariableCosts;
     const profit = currentRevenue - totalCosts;
-    // Contribution Margin = Revenue - All Variable Costs (CMV + Variables + Variable Taxes)
-    const contributionMargin = currentRevenue - variableCosts - taxCostSimples; 
+    // Contribution Margin = Revenue - All Variable Costs (CMV + Card Fees + Taxes)
+    const contributionMargin = currentRevenue - totalVariableCosts; 
     const marginPercentage = currentRevenue > 0 ? (profit / currentRevenue) * 100 : 0;
     
+    // iFood % for "Dinheiro na Mesa"
+    let ifoodPercentage = 0;
+    if (formData.fees_marketplaces && Array.isArray(formData.fees_marketplaces)) {
+        const ifoodEntry = formData.fees_marketplaces.find(m => m.provider === 'iFood');
+        if (ifoodEntry && ifoodEntry.sales_percentage) {
+            ifoodPercentage = parseFloat(String(ifoodEntry.sales_percentage || '0').replace(',', '.').replace('%', '')) || 0;
+        }
+    }
+    // Also check for explicit ifood_sales_percentage field (fallback)
+    if (formData.ifood_sales_percentage && ifoodPercentage === 0) {
+        ifoodPercentage = parseFloat(String(formData.ifood_sales_percentage).replace(',', '.').replace('%', '')) || 0;
+    }
+
+    // Fixed Cost % over revenue
+    const fixedCostPercentage = currentRevenue > 0 ? (totalFixedCosts / currentRevenue) * 100 : 0;
+    const cmvPercentageDisplay = cmvPercentage * 100;
+
+    // "Dinheiro na Mesa" calculation:
+    // Sum excess % above thresholds: iFood>23%, CF>33%, CMV>30%
+    let moneyOnTableTotal = 0;
+    const moneyOnTableItems = [];
+
+    if (ifoodPercentage > 23 && currentRevenue > 0) {
+        const excess = ((ifoodPercentage - 23) / 100) * currentRevenue;
+        moneyOnTableTotal += excess;
+        moneyOnTableItems.push({ label: `iFood (${ifoodPercentage.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(ifoodPercentage - 23).toFixed(1)}% acima` });
+    }
+    if (fixedCostPercentage > 33 && currentRevenue > 0) {
+        const excess = ((fixedCostPercentage - 33) / 100) * currentRevenue;
+        moneyOnTableTotal += excess;
+        moneyOnTableItems.push({ label: `Custo Fixo (${fixedCostPercentage.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(fixedCostPercentage - 33).toFixed(1)}% acima` });
+    }
+    if (cmvPercentageDisplay > 30 && currentRevenue > 0 && hasCmvData) {
+        const excess = ((cmvPercentageDisplay - 30) / 100) * currentRevenue;
+        moneyOnTableTotal += excess;
+        moneyOnTableItems.push({ label: `CMV (${cmvPercentageDisplay.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(cmvPercentageDisplay - 30).toFixed(1)}% acima` });
+    }
+
     // Break Even Point (Ponto de Equilíbrio)
     // BEP = Fixed Costs / Marge Contribution Percentage
     const contributionMarginPercentage = currentRevenue > 0 ? (contributionMargin / currentRevenue) : 0;
@@ -397,6 +459,7 @@ export const DashboardProvider = ({ children }) => {
             status: profit >= 0 ? "Positivo" : "Alerta",
             change: "0%", 
             risk: { label: "Estável", count: "-" },
+            annualTotal: formatMoney(totalAnnualRevenue),
             cards: [
                 {
                     label: "Custos Fixos Totais",
@@ -407,54 +470,85 @@ export const DashboardProvider = ({ children }) => {
                 },
                 {
                     label: "Custos Variáveis Estimados",
-                    value: `R$ ${formatMoney(variableCosts)}`,
-                    percentage: `${(cmvPercentage * 100).toFixed(1)}%`,
+                    value: `R$ ${formatMoney(totalVariableCosts)}`,
+                    percentage: currentRevenue > 0 ? `${((totalVariableCosts / currentRevenue) * 100).toFixed(1)}%` : "0%",
                     status: "neutral",
                     icon: "pie"
                 }
             ]
         },
         breakEven: {
-            // How much of the break_even have we hit? (E.g. hit 100% when revenue == breakEven)
-            percentage: breakEvenValue === 0 && currentRevenue > 0 ? 100 : (breakEvenValue > 0 ? Math.min(Math.round((currentRevenue / breakEvenValue) * 100), 100) : 0), 
-            current: formatMoney(breakEvenValue),
+            // Only show break-even if CMV is properly filled via fichas técnicas
+            hasCmvData: hasCmvData,
+            percentage: !hasCmvData ? 0 : (breakEvenValue === 0 && currentRevenue > 0 ? 100 : (breakEvenValue > 0 ? Math.min(Math.round((currentRevenue / breakEvenValue) * 100), 100) : 0)), 
+            current: hasCmvData ? formatMoney(breakEvenValue) : "0,00",
             min: "0",
             max: formatMoney(Math.max(currentRevenue, breakEvenValue) * 1.5), 
             base: {
                 value: marginPercentage.toFixed(0),
-                status: marginPercentage < 10 ? "Alerta" : (marginPercentage > 20 ? "Saudável" : "Médio"),
-                range: "Acima de 15% ideal"
+                status: marginPercentage > 50 ? "Alerta" : (marginPercentage >= 10 ? "Saudável" : "Baixo"),
+                range: "Recomendado até 50%"
             }
         },
         cards: {
             moneyOnTable: {
-                // Dinheiro na mesa is defined here as what they *could* be making if they hit ideal costs vs what they *are* making
-                // Let's assume ideal margin is 20%. 
-                idealMargin: 20,
-                currentMargin: marginPercentage,
-                total: formatMoney(currentRevenue),
-                lost: marginPercentage < 20 && currentRevenue > 0 ? formatMoney((0.20 - (profit/currentRevenue)) * currentRevenue) : "0,00",
-                recovered: profit > 0 ? formatMoney(profit) : "0,00",
-                percentage: marginPercentage < 20 && currentRevenue > 0 ? Math.round(((0.20 - (profit/currentRevenue)) / 0.20) * 100) + "%" : "0%"
+                total: formatMoney(moneyOnTableTotal),
+                items: moneyOnTableItems,
+                hasData: currentRevenue > 0 && (ifoodPercentage > 0 || fixedCostPercentage > 0 || hasCmvData),
+                percentage: currentRevenue > 0 && moneyOnTableTotal > 0 ? `${((moneyOnTableTotal / currentRevenue) * 100).toFixed(1)}%` : "0%"
             },
             technicalSheets: [
-                { label: 'CMV real', value: `${(cmvPercentage * 100).toFixed(0)}%` },
+                { label: 'CMV Teórico', value: hasCmvData ? `${cmvPercentageDisplay.toFixed(0)}%` : '0%' },
                 { label: 'Fichas Desatualizadas', value: '0' },
                 { label: 'Produtos Sem Ficha', value: '0' },
             ],
-            costStructure: {
-                total: formatMoney(totalCosts),
-                percentage: currentRevenue > 0 ? Math.round((totalCosts / currentRevenue) * 100) + "%" : "0%",
-                breakdown: [
-                    { label: 'Pessoal + Sócios', value: `R$ ${formatMoney(personnelCosts)}` },
-                    { label: 'Infraestrutura', value: `R$ ${formatMoney(fixedCosts - parseCurrency(formData?.admin_systems?.accountant || 0) - parseCurrency(formData?.marketing_structure?.agency || 0))}` }, 
-                    { label: 'CMV Estimado', value: `R$ ${formatMoney(variableCosts)}` },
-                    { label: 'Admin e Mkt', value: `R$ ${formatMoney(parseCurrency(formData?.admin_systems?.accountant || 0) + parseCurrency(formData?.marketing_structure?.agency || 0))}` }, 
-                ]
-            }
+            costStructure: (() => {
+                // Admin e Mkt: ALL admin_systems costs + ALL marketing_structure costs
+                const adminMktTotal = 
+                    parseCurrency(formData?.admin_systems?.software_pdv || 0) +
+                    parseCurrency(formData?.admin_systems?.accountant || 0) +
+                    parseCurrency(formData?.admin_systems?.card_machine_rent || 0) +
+                    (formData?.identity?.is_mei === 'Sim' ? parseCurrency(formData?.admin_systems?.taxes_das || 0) : 0) +
+                    parseCurrency(formData?.marketing_structure?.agency || 0) +
+                    parseCurrency(formData?.marketing_structure?.ads_budget || 0) +
+                    (parseCurrency(formData?.marketing_structure?.gifts_cost || 0) * (parseFloat(formData?.marketing_structure?.gifts_qty) || 0));
+
+                // Infraestrutura = fixedCosts minus admin/mkt items that were already counted in fixedCosts
+                const infraCosts = fixedCosts - 
+                    parseCurrency(formData?.admin_systems?.software_pdv || 0) -
+                    parseCurrency(formData?.admin_systems?.accountant || 0) -
+                    parseCurrency(formData?.admin_systems?.card_machine_rent || 0) -
+                    (formData?.identity?.is_mei === 'Sim' ? parseCurrency(formData?.admin_systems?.taxes_das || 0) : 0) -
+                    parseCurrency(formData?.marketing_structure?.agency || 0) -
+                    parseCurrency(formData?.marketing_structure?.ads_budget || 0) -
+                    (parseCurrency(formData?.marketing_structure?.gifts_cost || 0) * (parseFloat(formData?.marketing_structure?.gifts_qty) || 0));
+
+                return {
+                    total: formatMoney(totalCosts),
+                    percentage: currentRevenue > 0 ? Math.round((totalCosts / currentRevenue) * 100) + "%" : "0%",
+                    breakdown: [
+                        { label: 'Pessoal + Sócios', value: `R$ ${formatMoney(personnelCosts)}` },
+                        { label: 'Infraestrutura', value: `R$ ${formatMoney(Math.max(0, infraCosts))}` }, 
+                        { label: 'CMV Estimado', value: `R$ ${formatMoney(cmvCost)}` },
+                        { label: 'Admin e Mkt', value: `R$ ${formatMoney(adminMktTotal)}` }, 
+                    ]
+                };
+            })(),
+        },
+        restaurant: {
+            name: formData?.identity?.restaurant_name || "Seu Restaurante",
+            logo: formData?.identity?.business_logo || null,
+            category: formData?.identity?.cuisine_type || "Gastronomia"
+        },
+        user: {
+            name: formData?.user_info?.user_name || "Usuário",
+            photo: formData?.user_info?.user_photo || null,
+            role: "Proprietário da Conta",
+            initials: (formData?.user_info?.user_name || "U").substring(0, 2).toUpperCase(),
+            isOwner: true
         },
         overview: {
-            title: "Terra e Mar 360",
+            title: formData?.identity?.restaurant_name || "Seu Restaurante",
             subtitle: "Dados baseados no seu preenchimento de onboarding.",
             tags: [
                 { label: 'Faturamento', active: false },

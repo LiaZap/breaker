@@ -29,7 +29,7 @@ export const onboardingQuestions = [
     description: 'Vamos começar com o básico do seu estabelecimento.',
     type: 'composite',
     fields: [
-      { id: 'restaurant_name', label: 'Nome do Restaurante', type: 'text', placeholder: 'Ex: Terra e Mar 360' },
+      { id: 'restaurant_name', label: 'Nome do Restaurante', type: 'text', placeholder: 'Ex: Meu Restaurante' },
       { id: 'cuisine_type', label: 'Tipo de Negócio', type: 'autocomplete', placeholder: 'Ex: Italiana, Japonesa...', options: ['Italiana', 'Japonesa', 'Brasileira', 'Contemporânea', 'Fast Food', 'Pizzaria', 'Hamburgueria', 'Asiática', 'Árabe', 'Mexicana', 'Vegetariana/Vegana', 'Cafeteria', 'Doceria/Confeitaria', 'Padaria', 'Bar/Pub', 'Steakhouse/Churrascaria', 'Frutos do Mar', 'Bistrô', 'Buffet', 'Outros'] },
       { id: 'business_logo', label: 'Logo da Empresa (Opcional)', type: 'file', placeholder: 'Anexar logo' },
       { id: 'tax_regime', label: 'Regime Tributário', type: 'select', options: ['Simples Nacional', 'Lucro Presumido', 'Lucro Real'] },
@@ -50,7 +50,7 @@ export const onboardingQuestions = [
     fields: [
       { id: 'name', label: 'Nome', type: 'text', placeholder: 'Nome do Sócio' },
       { id: 'role', label: 'Cargo', type: 'text', placeholder: 'Ex: Diretor' },
-      { id: 'pro_labore', label: 'Pró-Labore (R$)', type: 'currency', placeholder: 'R$ 0,00', helpText: 'Valor fiscal retirado, não o lucro.' },
+      { id: 'pro_labore', label: 'Pró-Labore (R$)', type: 'currency', placeholder: 'R$ 0,00', helpText: 'Valor fiscal retirado pelo sócio. Não o valor de Lucro.' },
       { id: 'photo', label: 'Foto (Opcional)', type: 'file', placeholder: 'Anexar foto' }
     ]
   },
@@ -100,7 +100,7 @@ export const onboardingQuestions = [
     type: 'composite',
     fields: [
       { id: 'rent', label: 'Valor do Aluguel (Mensal)', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'iptu_annual', label: 'Valor IPTU (ANUAL)', type: 'currency', placeholder: 'R$ 0,00' }
+      { id: 'iptu_annual', label: 'Valor IPTU (anual)', type: 'currency', placeholder: 'R$ 0,00' }
     ]
   },
 
@@ -231,7 +231,8 @@ export const onboardingQuestions = [
     fields: [
         { id: 'provider', label: 'Plataforma', type: 'select', options: ['iFood', 'Rappi', 'Delivery Much', 'App Próprio', 'Outro'] },
         { id: 'monthly_fee', label: 'Mensalidade Fixa', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'commission', label: '% Comissão', type: 'percentage', placeholder: 'Ex: 12%' }
+        { id: 'commission', label: '% Comissão', type: 'percentage', placeholder: 'Ex: 12%' },
+        { id: 'sales_percentage', label: '% das Vendas Totais', type: 'percentage', placeholder: 'Ex: 25%', helpText: 'Percentual do faturamento total que vem deste canal' }
     ]
   },
   {
@@ -259,7 +260,23 @@ export const onboardingQuestions = [
     itemLabel: 'Mês',
     fields: [
         { id: 'month', label: 'Mês/Ano', type: 'text', placeholder: 'MM/AAAA' },
-        { id: 'amount', label: 'Faturamento', type: 'currency', placeholder: 'R$ 0,00' }
+        { id: 'amount', label: 'Faturamento', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'sales_percentage', label: '% de Vendas Mensais', type: 'percentage', placeholder: 'Ex: 100%', helpText: 'Percentual do faturamento vindo de vendas' }
+    ]
+  },
+
+  // Etapa 15: Outros Custos Fixos
+  {
+    id: 'other_fixed_costs',
+    section: 'Infraestrutura',
+    title: 'Outros Custos Fixos',
+    description: 'Adicione outros custos fixos não listados anteriormente.',
+    type: 'dynamic_list_calc',
+    itemLabel: 'Custo',
+    calcType: 'none',
+    fields: [
+        { id: 'name', label: 'Descrição', type: 'text', placeholder: 'Ex: Manutenção predial' },
+        { id: 'value', label: 'Valor Mensal', type: 'currency', placeholder: 'R$ 0,00' }
     ]
   }
 ];

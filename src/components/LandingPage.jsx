@@ -40,7 +40,13 @@ const LandingPage = ({ onComplete }) => {
           
           {/* Restaurant Info */}
           <div className="flex items-center gap-[6px]">
+            {restaurant.logo ? (
+            <div className="w-[46px] h-[46px] rounded-full overflow-hidden border border-white/10 bg-[#344036]">
+              <img src={restaurant.logo} alt={restaurant.name} className="w-full h-full object-cover" />
+            </div>
+          ) : (
             <div className="w-[46px] h-[46px] rounded-full bg-[#344036]" />
+          )}
             <div>
               <div className="font-semibold text-[14px] text-[#514F43]">{restaurant.name}</div>
               <div className="font-medium text-[10px] text-[#A39888]">{restaurant.category}</div>

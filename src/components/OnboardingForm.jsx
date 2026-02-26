@@ -1,9 +1,122 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { onboardingQuestions } from '../data/onboardingQuestions';
 import { useDashboard } from '../context/DashboardContext';
+
+
+
+const ImageCropModal = ({ src, onConfirm, onClose }) => {
+    const canvasRef = useRef(null);
+    const [zoom, setZoom] = useState(1);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const imageRef = useRef(null);
+
+    const handleConfirm = () => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        const size = 300; // Target size
+        
+        // Final export canvas
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = size;
+        exportCanvas.height = size;
+        const eCtx = exportCanvas.getContext('2d');
+        
+        // Draw the current state of the main canvas into the export canvas
+        eCtx.drawImage(canvas, 0, 0, size, size);
+        onConfirm(exportCanvas.toDataURL('image/png'));
+    };
+
+    const draw = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || !imageRef.current) return;
+        const ctx = canvas.getContext('2d');
+        const size = 300;
+        canvas.width = size;
+        canvas.height = size;
+
+        ctx.clearRect(0, 0, size, size);
+        
+        const img = imageRef.current;
+        const scale = Math.max(size / img.width, size / img.height) * zoom;
+        const w = img.width * scale;
+        const h = img.height * scale;
+        
+        const x = (size - w) / 2 + offset.x;
+        const y = (size - h) / 2 + offset.y;
+
+        // Draw image
+        ctx.save();
+        // Circular clipping
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+        ctx.clip();
+        
+        ctx.drawImage(img, x, y, w, h);
+        ctx.restore();
+
+        // Overlay guide
+        ctx.strokeStyle = '#FFC100';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
+        ctx.stroke();
+    }, [zoom, offset]);
+
+    useEffect(() => {
+        const img = new Image();
+        img.src = src;
+        img.onload = () => {
+            imageRef.current = img;
+            draw();
+        };
+    }, [src, draw]);
+
+    const handleMouseDown = (e) => {
+        setIsDragging(true);
+        setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+    };
+
+    const handleMouseMove = (e) => {
+        if (!isDragging) return;
+        setOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+    };
+
+    const handleMouseUp = () => setIsDragging(false);
+
+    return (
+        <div className="fixed inset-0 z-110 flex items-center justify-center bg-black/80 backdrop-blur-md">
+            <div className="bg-[#1A1A1A] p-8 rounded-3xl border border-[#333] flex flex-col items-center gap-6 max-w-[400px] w-full">
+                <h3 className="text-white font-bold text-xl font-['Plus_Jakarta_Sans']">Ajustar Imagem</h3>
+                <div 
+                    className="relative cursor-move rounded-full overflow-hidden shadow-2xl border-4 border-[#333]"
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                >
+                    <canvas ref={canvasRef} />
+                </div>
+                <div className="w-full flex flex-col gap-2">
+                    <label className="text-white/50 text-xs font-medium">ZOOM</label>
+                    <input 
+                        type="range" min="1" max="3" step="0.1" 
+                        value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))}
+                        className="w-full accent-[#FFC100]"
+                    />
+                </div>
+                <div className="flex gap-4 w-full mt-4">
+                    <button onClick={onClose} className="flex-1 py-3 text-white/50 font-bold hover:text-white transition-colors">CANCELAR</button>
+                    <button onClick={handleConfirm} className="flex-1 py-3 bg-[#FFC100] text-black font-bold rounded-xl hover:bg-[#FFD600] transition-colors">CONFIRMAR</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const AutocompleteField = ({ field, value, onChange }) => {
     const [searchTerm, setSearchTerm] = useState(value || '');
@@ -75,6 +188,8 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
   const [regConfirm, setRegConfirm] = useState('');
   const [regError, setRegError] = useState('');
   const [regLoading, setRegLoading] = useState(false);
+  const [cropSource, setCropSource] = useState(null);
+  const [cropTarget, setCropTarget] = useState(null);
 
   const currentQuestion = onboardingQuestions[currentStepIndex];
   const totalSteps = onboardingQuestions.length;
@@ -334,7 +449,8 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                                             if (file) {
                                                 const reader = new FileReader();
                                                 reader.onloadend = () => {
-                                                    handleCompositeChange(question.id, field.id, reader.result, field.type);
+                                                    setCropSource(reader.result);
+                                                    setCropTarget({ questionId: question.id, fieldId: field.id });
                                                 };
                                                 reader.readAsDataURL(file);
                                             }
@@ -866,6 +982,22 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
           Cancelar Onboarding
         </button>
       </motion.div>
+      <AnimatePresence>
+        {cropSource && (
+          <ImageCropModal 
+            src={cropSource}
+            onClose={() => {
+              setCropSource(null);
+              setCropTarget(null);
+            }}
+            onConfirm={(croppedImage) => {
+              handleCompositeChange(cropTarget.questionId, cropTarget.fieldId, croppedImage, 'file');
+              setCropSource(null);
+              setCropTarget(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 };

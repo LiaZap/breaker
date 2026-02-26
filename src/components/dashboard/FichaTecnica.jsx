@@ -384,7 +384,7 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave }) => {
   const [showNewInsumoForm, setShowNewInsumoForm] = useState(false);
   const [newInsumo, setNewInsumo] = useState({ name: '', category: insumoCategoryOptions[0], qty: '200', grossQty: '', unit: 'gr', price: '' });
 
-  const currentCustoTotalInsumos = addedInsumos.reduce((sum, i) => {
+  const calculatedInsumoCost = addedInsumos.reduce((sum, i) => {
       const totalPricePB = parseSafeNumber(i.price);
       const pb = parseSafeNumber(i.grossQty || i.pesoBruto || i.defaultQty || 1) || 1;
       const unitCost = totalPricePB / pb;
@@ -392,6 +392,11 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave }) => {
       const fc = parseSafeNumber(i.fc) || 1;
       return sum + (requiredPL * fc * unitCost);
   }, 0);
+
+  // If imported and no insumos added yet, we use the imported CMV
+  const currentCustoTotalInsumos = (addedInsumos.length === 0 && editingFicha?.isImported) 
+    ? parseSafeNumber(editingFicha.custoInsumos) 
+    : calculatedInsumoCost;
 
   // Handlers
   const handleSave = () => {
@@ -403,16 +408,20 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave }) => {
     const custoEmb = parseSafeNumber(custoEmbalagem);
     
     const fichaData = {
+      ...editingFicha, // Preserve isImported and other flags
       id: editingFicha ? editingFicha.id : Date.now().toString(),
       name: nome,
       type: categoria,
       progress: editingFicha ? editingFicha.progress : 0, 
       insumos: addedInsumos.length,
       ingredients: addedInsumos, 
-      custoInsumos: `R$${custoTotalInsumos.toFixed(2).replace('.', ',')}`,
-      custoEmbalagem: `R$${custoEmb.toFixed(2).replace('.', ',')}`,
+      custoInsumos: `R$ ${custoTotalInsumos.toFixed(2).replace('.', ',')}`,
+      custoEmbalagem: `R$ ${custoEmb.toFixed(2).replace('.', ',')}`,
       rendimento: `${rendimento}gr`,
       custoTotal: `R$ ${(custoTotalInsumos + custoEmb).toFixed(2).replace('.', ',')}`,
+      
+      // Keep isImported true only if we haven't added ingredients
+      isImported: addedInsumos.length === 0 && (editingFicha?.isImported || false),
       
       // Menu Engineering integration
       precoVenda: `R$ ${(parseSafeNumber(precoVenda) || 0).toFixed(2).replace('.', ',')}`,
@@ -1100,6 +1109,107 @@ const FichaTecnica = () => {
     event.target.value = '';
   };
 
+  const handleDownloadFichasTemplate = () => {
+    const header = "Nome do Prato;Categoria;Valor do CMV (R$);Valor de Venda (R$)\n";
+    const example = "Pizza Margherita;Prato Principal;15.50;45.00\n";
+    const blob = new Blob(["\uFEFF" + header + example], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'modelo_fichas_tecnicas.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+  };
+
+  const handleImportFichas = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const text = e.target.result;
+        const lines = text.split('\n');
+        const newItems = [];
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            const separator = line.includes(';') ? ';' : ',';
+            const cols = line.split(separator);
+            if (cols.length >= 4) {
+                const name = cols[0].trim();
+                const cat = cols[1].trim();
+                const cmv = parseSafeNumber(cols[2].trim());
+                const price = parseSafeNumber(cols[3].trim());
+                
+                newItems.push({
+                    id: `imp_ft_${Date.now()}_${i}`,
+                    name: name,
+                    type: cat || 'Prato Principal',
+                    progress: 0,
+                    insumos: 0,
+                    ingredients: [],
+                    custoInsumos: `R$ ${cmv.toFixed(2).replace('.', ',')}`,
+                    custoEmbalagem: "R$ 0,00",
+                    rendimento: "0gr",
+                    custoTotal: `R$ ${cmv.toFixed(2).replace('.', ',')}`,
+                    precoVenda: `R$ ${price.toFixed(2).replace('.', ',')}`,
+                    vendasMes: "0",
+                    isImported: true // Flag to indicate manual CMV
+                });
+            }
+        }
+        
+        if (newItems.length > 0) {
+            const updatedFichas = [...fichas];
+            const updatedMenuEngineering = [...(dashboardData.menuEngineering || [])];
+
+            newItems.forEach(newItem => {
+                const existingIndex = updatedFichas.findIndex(
+                    f => f.name.toLowerCase().trim() === newItem.name.toLowerCase().trim()
+                );
+                
+                if (existingIndex >= 0) {
+                    updatedFichas[existingIndex] = {
+                        ...updatedFichas[existingIndex],
+                        ...newItem,
+                        id: updatedFichas[existingIndex].id
+                    };
+                } else {
+                    updatedFichas.push(newItem);
+                }
+
+                // Also update Menu Engineering for immediately visible data
+                const menuData = {
+                    id: `ft_${newItem.id}`,
+                    name: newItem.name,
+                    category: newItem.type,
+                    sales: "0",
+                    price: newItem.precoVenda,
+                    cost: newItem.custoTotal
+                };
+                const mIdx = updatedMenuEngineering.findIndex(m => m.name.toLowerCase() === newItem.name.toLowerCase());
+                if (mIdx >= 0) updatedMenuEngineering[mIdx] = menuData;
+                else updatedMenuEngineering.push(menuData);
+            });
+
+            updateDashboardData({
+                operational: {
+                    ...dashboardData.operational,
+                    fichas: updatedFichas
+                },
+                menuEngineering: updatedMenuEngineering
+            });
+            alert(`${newItems.length} fichas pré-processadas com sucesso!`);
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
   return (
     <div className="flex flex-col w-full h-full min-h-screen bg-[#101010] font-jakarta text-white">
 
@@ -1253,7 +1363,7 @@ const FichaTecnica = () => {
                       </p>
                   </div>
                   
-                  {activeTab === 'insumos' && (
+                  {activeTab === 'insumos' ? (
                       <div className="flex items-center gap-3">
                           <button
                             onClick={() => setShowCategoriesModal(true)}
@@ -1277,6 +1387,22 @@ const FichaTecnica = () => {
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                               Importar CSV
                               <input type="file" accept=".csv" onChange={handleImportInsumos} hidden />
+                          </label>
+                      </div>
+                  ) : (
+                      <div className="flex items-center gap-3">
+                          <button 
+                              onClick={handleDownloadFichasTemplate}
+                              className="text-[11px] font-medium text-[#F5A623] hover:text-[#E5961E] transition-colors flex items-center gap-1.5"
+                          >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                              Baixar Modelo FT
+                          </button>
+                          
+                          <label className="bg-[#252527] hover:bg-[#333] border border-[#2A2A2C] text-white text-[11px] font-medium px-3 py-1.5 rounded-[8px] transition-colors cursor-pointer flex items-center gap-1.5">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                              Importar Tabela
+                              <input type="file" accept=".csv" onChange={handleImportFichas} hidden />
                           </label>
                       </div>
                   )}

@@ -23,7 +23,7 @@ const FinanceOverview = ({ data }) => {
     <div className="flex flex-col w-full bg-[#101010] rounded-[16px]">
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <span className="font-semibold text-[14px] text-[#CACACA]">Faturamento</span>
           <p className="font-normal text-[10px] text-[#595959]">Visão Geral dos Índices Financeiros</p>
@@ -40,6 +40,14 @@ const FinanceOverview = ({ data }) => {
         </div>
       </div>
 
+      {/* Period Total */}
+      {data.annualTotal && (
+        <div className="flex items-center gap-2 mb-3 px-1">
+          <span className="text-[10px] text-[#595959]">Faturamento Total do Período:</span>
+          <span className="text-[11px] font-bold text-[#E2FD89]">R$ {data.annualTotal}</span>
+        </div>
+      )}
+
       {/* Bar Chart - Daily History (30 Days) */}
       <div className="h-[60px] flex items-end justify-between gap-[6px] w-full mb-4 px-1 relative">
         {(() => {
@@ -51,17 +59,18 @@ const FinanceOverview = ({ data }) => {
               const isCurrent = i === currentMonthIdx;
               const isFuture = i > currentMonthIdx;
               const isSelected = selectedMonth === i;
+              const hasData = val > 0;
 
-              // Determine Color
-              let bgColor = 'bg-[#333]'; // Default/Future
-              if (isSelected) bgColor = 'bg-[#FF9406]';
-              else if (isCurrent) bgColor = 'bg-[#FF9406]'; 
-              else if (val > 0) bgColor = 'bg-[#E1E1E1]'; // Past/Present with data
+              // Determine Color - Don't highlight current month if no data
+              let bgColor = 'bg-[#333]'; // Default/Future/No data
+              if (isSelected && hasData) bgColor = 'bg-[#FF9406]';
+              else if (isCurrent && hasData) bgColor = 'bg-[#FF9406]'; 
+              else if (hasData) bgColor = 'bg-[#E1E1E1]'; // Past with data
 
               // Determine Opacity
               let opacity = 0.3;
-              if (isFuture) opacity = 0.2;
-              else if (isSelected || isCurrent || hoveredMonth === i) opacity = 1;
+              if (isFuture || !hasData) opacity = 0.2;
+              else if (isSelected || (isCurrent && hasData) || hoveredMonth === i) opacity = 1;
               else opacity = 0.6;
 
               return (

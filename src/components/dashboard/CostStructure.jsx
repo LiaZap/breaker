@@ -10,7 +10,7 @@ const CostStructure = ({ data }) => {
             Estrutura de custos
           </h3>
           <p className="font-normal text-[11px] text-[#868686]">
-            Quanto a operação precisa gastar para ser viável
+            Custos totais da operação
           </p>
         </div>
         <div className="shrink-0">
