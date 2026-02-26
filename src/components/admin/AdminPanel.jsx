@@ -161,7 +161,7 @@ const AdminPanel = () => {
                 value={newClientName}
                 onChange={(e) => setNewClientName(e.target.value)}
                 className="w-full bg-[#252527] border border-[#2A2A2C] rounded-[10px] px-4 py-3 text-white outline-none focus:border-[#F5A623] transition-colors"
-                placeholder="Ex: Terra e Mar"
+                placeholder="Ex: Meu Restaurante"
                 autoFocus
               />
             </div>
