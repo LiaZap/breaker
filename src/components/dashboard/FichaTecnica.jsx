@@ -310,7 +310,7 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
 import FichaTecnicaPrint from './FichaTecnicaPrint';
 
 // ============ MODAL: Criar/Editar Ficha Técnica ============
-const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave }) => {
+const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onSyncInsumo }) => {
   const isEditing = !!editingFicha;
   const { dashboardData } = useDashboard();
   
@@ -450,6 +450,16 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave }) => {
     };
     
     setAddedInsumos(prev => [...prev, created]);
+
+    // Sync new insumo to the global insumos list
+    if (onSyncInsumo) {
+      onSyncInsumo({
+        ...created,
+        rendimento: `${created.qty}${created.unit}`,
+        custo: `R$ ${unitPrice.toFixed(2).replace('.', ',')}`,
+      });
+    }
+
     setNewInsumo({ name: '', category: insumoCategoryOptions[0], qty: '200', grossQty: '', unit: 'gr', price: '' });
     setShowNewInsumoForm(false);
   };
@@ -1447,6 +1457,7 @@ const FichaTecnica = () => {
           editingFicha={modalFicha !== 'new' ? modalFicha : null}
           onSave={handleSaveFicha}
           onDelete={handleDeleteFicha}
+          onSyncInsumo={handleSaveInsumo}
         />
       )}
 
