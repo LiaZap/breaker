@@ -302,13 +302,24 @@ export const DashboardProvider = ({ children }) => {
         });
     }
     
-    if (formData.benefits) {
+    // Benefits per employee (embedded in each employee card)
+    if (formData.employees && Array.isArray(formData.employees)) {
+        formData.employees.forEach(emp => {
+            const transValue = parseCurrency(emp.transport_value);
+            const transQty = parseFloat(emp.transport_qty) || 0;
+            const workDays = parseFloat(emp.work_days) || 0;
+            const foodCost = parseCurrency(emp.food_cost);
+            personnelCosts += (transValue * transQty * workDays);
+            personnelCosts += (foodCost * workDays);
+        });
+    }
+    // Legacy: support old benefits format
+    if (formData.benefits && !formData.employees?.[0]?.transport_value) {
         const transValue = parseCurrency(formData.benefits.transport_value);
         const transQty = parseFloat(formData.benefits.transport_qty) || 0;
         const workDays = parseFloat(formData.benefits.work_days) || 0;
         const foodCost = parseCurrency(formData.benefits.food_cost);
-        const empCount = formData.employees ? formData.employees.length : 1; // assume at least 1 person using
-        
+        const empCount = formData.employees ? formData.employees.length : 1;
         personnelCosts += (transValue * transQty * workDays * empCount);
         personnelCosts += (foodCost * workDays * empCount);
     }

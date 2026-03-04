@@ -34,7 +34,7 @@ export const onboardingQuestions = [
       { id: 'business_logo', label: 'Logo da Empresa (Opcional)', type: 'file', placeholder: 'Anexar logo' },
       { id: 'tax_regime', label: 'Regime Tributário', type: 'select', options: ['Simples Nacional', 'Lucro Presumido', 'Lucro Real'] },
       // Logic for MEI will be handled in form if Simples is selected
-      { id: 'is_mei', label: 'É MEI?', type: 'select', options: ['Não', 'Sim'], hidden: true, dependsOn: 'tax_regime', dependsValue: 'Simples Nacional' } 
+      { id: 'is_mei', label: 'É MEI?', type: 'select', options: ['Não', 'Sim'], dependsOn: 'tax_regime', dependsValue: 'Simples Nacional' }
     ]
   },
 
@@ -68,18 +68,8 @@ export const onboardingQuestions = [
       { id: 'name', label: 'Nome', type: 'text', placeholder: 'Nome' },
       { id: 'role', label: 'Cargo', type: 'text', placeholder: 'Ex: Cozinheiro' },
       { id: 'base_salary', label: 'Salário Base (R$)', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'regime', label: 'Regime', type: 'select', options: ['CLT', 'Freelancer', 'PJ'] }
-    ]
-  },
-
-  // Etapa 04: Benefícios e Alimentação (Opcional)
-  {
-    id: 'benefits',
-    section: 'Identidade e Equipe',
-    title: 'Benefícios e Alimentação',
-    description: 'Custos invisíveis com transporte e refeição da equipe.',
-    type: 'composite',
-    fields: [
+      { id: 'regime', label: 'Regime', type: 'select', options: ['CLT', 'Freelancer', 'PJ'] },
+      { id: '_separator_benefits', type: 'separator', label: 'Benefícios e Alimentação' },
       { id: 'transport_value', label: 'Valor da Passagem (R$)', type: 'currency', placeholder: 'R$ 0,00' },
       { id: 'transport_qty', label: 'Qtd Passagens/Dia', type: 'number', placeholder: 'Ex: 2' },
       { id: 'work_days', label: 'Dias Trabalhados/Mês', type: 'number', placeholder: 'Ex: 22' },
@@ -213,10 +203,10 @@ export const onboardingQuestions = [
     calcType: 'vehicle_cost',
     fields: [
         { id: 'name', label: 'Veículo', type: 'text', placeholder: 'Ex: Fiorino' },
-        { id: 'installment', label: 'Parcela/Financ.', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'installment', label: 'Parcela/Financ. (Mensal)', type: 'currency', placeholder: 'R$ 0,00' },
         { id: 'insurance_annual', label: 'Seguro (Anual)', type: 'currency', placeholder: 'R$ 0,00' },
         { id: 'ipva_annual', label: 'IPVA (Anual)', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'maintenance_monthly', label: 'Combustível/Manut.', type: 'currency', placeholder: 'R$ 0,00' }
+        { id: 'maintenance_monthly', label: 'Combustível/Manut. (Mensal)', type: 'currency', placeholder: 'R$ 0,00' }
     ]
   },
 
@@ -251,6 +241,7 @@ export const onboardingQuestions = [
     calcType: 'none',
     fields: [
         { id: 'provider', label: 'Plataforma', type: 'select', options: ['iFood', 'Rappi', 'Delivery Much', 'App Próprio', 'Outro'] },
+        { id: 'custom_provider', label: 'Nome da Plataforma', type: 'text', placeholder: 'Ex: Uber Eats, 99Food...', dependsOn: { field: 'provider', value: 'Outro' } },
         { id: 'monthly_fee', label: 'Mensalidade Fixa', type: 'currency', placeholder: 'R$ 0,00' },
         { id: 'commission', label: '% Comissão', type: 'percentage', placeholder: 'Ex: 12%' },
         { id: 'sales_percentage', label: '% das Vendas Totais', type: 'percentage', placeholder: 'Ex: 25%', helpText: 'Percentual do faturamento total que vem deste canal' }

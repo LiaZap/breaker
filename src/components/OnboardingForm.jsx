@@ -420,6 +420,16 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {}, isEditing =
                       if (dependencyValue === field.hideIfGlobal.value) return null;
                   }
 
+                  // Auto-persist defaultValue for readOnly fields that are visible but not yet saved
+                  if (field.defaultValue && field.readOnly && !formData[question.id]?.[field.id]) {
+                      setTimeout(() => {
+                          setFormData(prev => ({
+                              ...prev,
+                              [question.id]: { ...(prev[question.id] || {}), [field.id]: field.defaultValue }
+                          }));
+                      }, 0);
+                  }
+
                   return (
                     <div key={field.id}>
                         <label className="text-xs text-secondary mb-1 opacity-70 flex justify-between items-center">
@@ -727,8 +737,23 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {}, isEditing =
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4">
-                            {question.fields.map(field => (
-                                <div key={field.id} className={field.id === 'name' ? 'col-span-2' : ''}>
+                            {question.fields.map(field => {
+                                if (field.type === 'separator') {
+                                    return (
+                                        <div key={field.id} className="col-span-2 flex items-center gap-3 mt-2 mb-1">
+                                            <div className="h-px flex-1 bg-[#444]" />
+                                            <span className="text-[10px] text-[#888] font-semibold uppercase tracking-wider whitespace-nowrap">{field.label}</span>
+                                            <div className="h-px flex-1 bg-[#444]" />
+                                        </div>
+                                    );
+                                }
+                                // Conditional field visibility within dynamic list item
+                                if (field.dependsOn) {
+                                    const depValue = item[field.dependsOn.field];
+                                    if (depValue !== field.dependsOn.value) return null;
+                                }
+                                return (
+                                <div key={field.id} className={field.id === 'name' || field.dependsOn ? 'col-span-2' : ''}>
                                     <label className="text-[10px] text-gray-400 mb-1 flex justify-between items-center relative z-10">
                                         {field.label}
                                         {field.helpText && (
@@ -785,7 +810,8 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {}, isEditing =
                                         />
                                     )}
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         {/* Cost Display & Helpers */}
@@ -881,11 +907,15 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {}, isEditing =
         {/* User Profile - Top Right (Only shows when typed) */}
         {formData?.user_info?.user_name && (
           <div className="absolute right-[55px] top-[28px] flex items-center gap-[11px]">
-            <div className="w-[46px] h-[46px] rounded-full bg-[#FDD688] flex items-center justify-center">
-              <span className="font-['Plus_Jakarta_Sans'] font-semibold text-[14px] text-black">
-                {(formData?.user_info?.user_name || "U").substring(0, 2).toUpperCase()}
-              </span>
-            </div>
+            {formData?.user_info?.user_photo ? (
+              <img src={formData.user_info.user_photo} alt="" className="w-[46px] h-[46px] rounded-full object-cover" />
+            ) : (
+              <div className="w-[46px] h-[46px] rounded-full bg-[#FDD688] flex items-center justify-center">
+                <span className="font-['Plus_Jakarta_Sans'] font-semibold text-[14px] text-black">
+                  {(formData?.user_info?.user_name || "U").substring(0, 2).toUpperCase()}
+                </span>
+              </div>
+            )}
             <div className="flex flex-col gap-[3px]">
               <div className="font-['Plus_Jakarta_Sans'] font-medium text-[14px] leading-[18px] text-white">
                 {formData?.user_info?.user_name}
