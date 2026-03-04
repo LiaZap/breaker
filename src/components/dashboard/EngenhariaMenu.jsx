@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 
 const EngenhariaMenu = () => {
-  const { updateDashboardData } = useDashboard();
+  const { dashboardData, updateDashboardData } = useDashboard();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('idle'); // idle, uploading, success, error
 
@@ -40,13 +40,49 @@ const EngenhariaMenu = () => {
         if (!res.ok) throw new Error('Upload failed');
         return res.json();
       })
-      .then(insumos => {
-        // Replace menuEngineering with the parsed items from the uploaded file.
-        // "Baixe... e SUBA NOVAMENTE PARA ATUALIZAR" implies full replacement.
-        updateDashboardData({
-            menuEngineering: insumos
+      .then(menuItems => {
+        // Create fichas técnicas for each imported item
+        const existingFichas = dashboardData.operational?.fichas || [];
+        const newFichas = [...existingFichas];
+
+        menuItems.forEach((item, i) => {
+          const alreadyExists = existingFichas.some(
+            f => f.name?.toLowerCase().trim() === item.name?.toLowerCase().trim()
+          );
+          if (!alreadyExists && item.name) {
+            const cost = item.cost || item.custo || '0';
+            const price = item.price || item.preco || '0';
+            // Parse cost/price - handle both "R$ 50,00" and "50.00" formats
+            const parsedCost = typeof cost === 'number' ? cost : parseFloat(String(cost).replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.')) || 0;
+            const parsedPrice = typeof price === 'number' ? price : parseFloat(String(price).replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.')) || 0;
+
+            newFichas.push({
+              id: `imp_eng_${Date.now()}_${i}`,
+              name: item.name,
+              type: item.category || item.categoria || 'Prato Principal',
+              progress: 0,
+              insumos: 0,
+              ingredients: [],
+              custoInsumos: `R$ ${parsedCost.toFixed(2).replace('.', ',')}`,
+              custoEmbalagem: "R$ 0,00",
+              rendimento: "0gr",
+              custoTotal: `R$ ${parsedCost.toFixed(2).replace('.', ',')}`,
+              precoVenda: `R$ ${parsedPrice.toFixed(2).replace('.', ',')}`,
+              vendasMes: item.sales || item.vendas || "0",
+              isImported: true,
+              lastUpdated: Date.now()
+            });
+          }
         });
-        
+
+        updateDashboardData({
+          menuEngineering: menuItems,
+          operational: {
+            ...dashboardData.operational,
+            fichas: newFichas
+          }
+        });
+
         setUploadStatus('success');
       })
       .catch(err => {
