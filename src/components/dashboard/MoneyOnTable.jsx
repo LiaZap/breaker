@@ -24,13 +24,11 @@ const MoneyOnTable = ({ data }) => {
       </div>
 
       {/* Main Value */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-baseline gap-1.5">
-          <span className="font-semibold text-[16px] text-[#FF9406]">R$</span>
-          <span className="font-semibold text-[24px] text-white tracking-tight">{data.total}</span>
-        </div>
+      <div className="flex items-baseline gap-1.5 mb-4 shrink-0">
+        <span className="font-semibold text-[16px] text-[#FF9406]">R$</span>
+        <span className="font-semibold text-[24px] text-white tracking-tight">{data.total}</span>
         {data.percentage && data.percentage !== "0%" && (
-          <div className="shrink-0 flex items-center justify-center bg-[#FD8989]/15 rounded-md px-2.5 h-[24px]">
+          <div className="ml-auto shrink-0 flex items-center justify-center bg-[#FD8989]/15 rounded-md px-2.5 h-[24px]">
              <span className="text-[#FD8989] text-[10px] font-bold">
                  {data.percentage}
              </span>
@@ -39,7 +37,7 @@ const MoneyOnTable = ({ data }) => {
       </div>
 
       {/* Breakdown Items */}
-      <div className="flex flex-col gap-2 mb-4 flex-1 min-h-0">
+      <div className="flex flex-col gap-2 flex-1 min-h-0">
         {data.items && data.items.length > 0 ? (
           data.items.map((item, idx) => (
             <div key={idx} className="flex items-center justify-between py-1.5 border-b border-[#2A2A2C] last:border-0">
@@ -54,9 +52,9 @@ const MoneyOnTable = ({ data }) => {
             </div>
           ))
         ) : (
-          <div className="flex items-center justify-center flex-1 opacity-50">
-            <p className="text-[10px] text-[#7E7E7E] text-center leading-relaxed">
-              {!data.hasData 
+          <div className="flex items-start flex-1 opacity-50">
+            <p className="text-[10px] text-[#7E7E7E] leading-relaxed">
+              {!data.hasData
                 ? "Preencha o % de vendas no iFood e fichas técnicas para ver valores."
                 : "Nenhum indicador acima do limite. Operação saudável!"
               }
@@ -66,19 +64,17 @@ const MoneyOnTable = ({ data }) => {
       </div>
 
       {/* Insight Section */}
-      <div className="flex gap-3 mt-auto pt-4">
-        <div className="w-[28px] h-[28px] shrink-0 bg-[#1E1E1E] rounded-full flex items-center justify-center border border-[#333]">
-           <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+      <div className="flex items-center gap-3 mt-auto pt-3 shrink-0 border-t border-[#2A2A2C]">
+        <div className="w-[24px] h-[24px] shrink-0 bg-[#1E1E1E] rounded-full flex items-center justify-center border border-[#333]">
+           <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
              <path d="M8 21H16M12 17V21M6 4H18C19.1046 4 20 4.89543 20 6V9C20 9.88331 19.3877 10.6139 18.5284 10.8924C17.7533 13.9113 15.0217 16.0353 12 15.9994C8.97869 15.9635 6.25203 13.8404 5.47164 10.8236C4.61232 10.5451 4 9.81449 4 8.93103V6C4 4.89543 4.89543 4 6 4Z" stroke="#777" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
              <path d="M10 8L12 10L14 8" stroke="#777" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
            </svg>
         </div>
-        <div className="flex-1">
-          <p className="text-[10px] text-[#A3A3A3] leading-normal">
-            <span className="font-bold text-[#E1E1E1]">Limites saudáveis: </span>
-            iFood até 23%, Custo Fixo até 33% e CMV até 30% do faturamento.
-          </p>
-        </div>
+        <p className="text-[10px] text-[#A3A3A3] leading-normal flex-1">
+          <span className="font-bold text-[#E1E1E1]">Limites saudáveis: </span>
+          iFood até 23%, Custo Fixo até 33% e CMV até 30% do faturamento.
+        </p>
       </div>
 
     </div>
