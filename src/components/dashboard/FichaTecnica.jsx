@@ -1012,21 +1012,33 @@ const FichaTecnica = () => {
 
   const handleDeleteFicha = (id) => {
     const newFichas = fichas.filter(f => String(f.id) !== String(id));
+    const newMenuEngineering = (dashboardData.menuEngineering || []).filter(
+      m => m.id !== `ft_${id}`
+    );
     updateDashboardData({
         operational: {
             ...dashboardData.operational,
             fichas: newFichas
-        }
+        },
+        menuEngineering: newMenuEngineering
     });
     setModalFicha(null);
   };
 
   const handleDeleteInsumo = (id) => {
     const newInsumos = insumos.filter(i => String(i.id) !== String(id));
-     updateDashboardData({
+    // Also remove this insumo from any fichas that reference it
+    const newFichas = (dashboardData.operational?.fichas || []).map(f => {
+      if (f.ingredients && f.ingredients.some(ing => String(ing.id) === String(id))) {
+        return { ...f, ingredients: f.ingredients.filter(ing => String(ing.id) !== String(id)) };
+      }
+      return f;
+    });
+    updateDashboardData({
         operational: {
             ...dashboardData.operational,
-            insumos: newInsumos
+            insumos: newInsumos,
+            fichas: newFichas
         }
     });
     setEditingInsumo(null);
@@ -1161,7 +1173,8 @@ const FichaTecnica = () => {
                     custoTotal: `R$ ${cmv.toFixed(2).replace('.', ',')}`,
                     precoVenda: `R$ ${price.toFixed(2).replace('.', ',')}`,
                     vendasMes: "0",
-                    isImported: true // Flag to indicate manual CMV
+                    isImported: true, // Flag to indicate manual CMV
+                    lastUpdated: Date.now()
                 });
             }
         }
