@@ -517,19 +517,31 @@ export const DashboardProvider = ({ children }) => {
                 }
             ]
         },
-        breakEven: {
-            // Only show break-even if CMV is properly filled via fichas técnicas
-            hasCmvData: hasCmvData,
-            percentage: !hasCmvData ? 0 : (breakEvenValue === 0 && currentRevenue > 0 ? 100 : (breakEvenValue > 0 ? Math.min(Math.round((currentRevenue / breakEvenValue) * 100), 100) : 0)), 
-            current: hasCmvData ? formatMoney(breakEvenValue) : "0,00",
-            min: "0",
-            max: formatMoney(Math.max(currentRevenue, breakEvenValue) * 1.5), 
-            base: {
-                value: basePercentage.toFixed(0),
-                status: basePercentage > 60 ? "Crítico" : (basePercentage > 55 ? "Alerta" : (basePercentage >= 45 ? "Saudável" : "Baixo")),
-                range: "Saudável entre 45% e 55%"
-            }
-        },
+        breakEven: (() => {
+            // Estimated day in the month when break-even is reached
+            const now = new Date();
+            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const dailyAvg = currentRevenue > 0 ? currentRevenue / daysInMonth : 0;
+            let estimatedDay = dailyAvg > 0 ? Math.ceil(breakEvenValue / dailyAvg) : 0;
+            const reachedBreakEven = estimatedDay > 0 && estimatedDay <= daysInMonth;
+            if (estimatedDay > daysInMonth) estimatedDay = daysInMonth;
+            const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            const estimatedDateStr = estimatedDay > 0 ? `${estimatedDay} ${monthNames[now.getMonth()]}` : '--';
+            return {
+                hasCmvData: hasCmvData,
+                percentage: !hasCmvData ? 0 : (breakEvenValue === 0 && currentRevenue > 0 ? 100 : (breakEvenValue > 0 ? Math.min(Math.round((currentRevenue / breakEvenValue) * 100), 100) : 0)),
+                current: hasCmvData ? formatMoney(breakEvenValue) : "0,00",
+                min: "0",
+                max: formatMoney(Math.max(currentRevenue, breakEvenValue) * 1.5),
+                estimatedDate: estimatedDateStr,
+                reachedBreakEven: reachedBreakEven,
+                base: {
+                    value: basePercentage.toFixed(0),
+                    status: basePercentage > 60 ? "Crítico" : (basePercentage > 55 ? "Alerta" : (basePercentage >= 45 ? "Saudável" : "Baixo")),
+                    range: "Saudável entre 45% e 55%"
+                }
+            };
+        })(),
         cards: {
             moneyOnTable: {
                 total: formatMoney(moneyOnTableTotal),
