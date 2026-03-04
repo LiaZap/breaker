@@ -129,37 +129,20 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
   const safeRendimento = insumo.rendimento || '0gr';
   const qty = safeRendimento.replace(/[^0-9.,]/g, '');
   const unitMatch = safeRendimento.replace(/[0-9.,]/g, '') || 'gr';
-  
-  const [pesoBrutoQty, setPesoBrutoQty] = useState(insumo.pesoBruto || qty || '');
-  const [pesoLiquidoQty, setPesoLiquidoQty] = useState(insumo.pesoLiquido || qty || '');
+
+  const [quantidade, setQuantidade] = useState(insumo.qty || insumo.defaultQty || qty || '');
   const [unit, setUnit] = useState(insumo.unit || unitMatch || 'gr');
-  
+
   const safeCusto = insumo.custo || '0,00';
   const [custo, setCusto] = useState(safeCusto.replace(/R\$\s?/g, '').trim());
 
   const { dashboardData } = useDashboard();
-  const categoryOptions = dashboardData.operational?.categories?.insumos || ['Proteínas', 'Grãos', 'Vinhos', 'Molhos', 'Legumes', 'Temperos', 'Óleos', 'Laticínios', 'Outros'];
+  const categoryOptions = dashboardData.operational?.categories?.insumos || ['Proteínas', 'Grãos', 'Vinhos', 'Molhos', 'Legumes', 'Temperos', 'Óleos', 'Laticínios', 'Insumo Pronto Preparado', 'Outros'];
 
-  // Calculations
-  const pb = parseSafeNumber(pesoBrutoQty);
-  const pl = parseSafeNumber(pesoLiquidoQty);
-  
-  const fc = pl > 0 && typeof pb === 'number' ? (pb / pl).toFixed(2) : '1.00';
-  const rendimentoPerc = pb > 0 ? Math.round((pl / pb) * 100) : 100;
-
-  // Custo Líquido Calculation
+  // Custo unitário simples (sem FC)
   const numericCusto = parseSafeNumber(custo);
-  // If we buy PB amount for `numericCusto`, the price per unit of PB is (numericCusto / pb).
-  // But we only get PL amount of usable product for that same `numericCusto`.
-  // So the effective price per unit of PL (Custo Líquido) is (numericCusto / pl).
-  const unitPricePL = pl > 0 ? (numericCusto / pl) : 0;
-  
-  // Alternative way to think: Custo Líquido = Custo Bruto * FC
-  // Let's display the total effective cost or the cost per unit?
-  // Usually, in "Custo de Compra", the user puts the price for the FULL PB amount. 
-  // e.g. "R$ 20,00" for "Qtd Bruta 1000g". So the PB unit cost is R$ 0,02/g.
-  // If PL is 800g, the PL unit cost is R$ 20,00 / 800g = R$ 0,025/g.
-  // We can show this unit cost to make it clear.
+  const numericQtd = parseSafeNumber(quantidade);
+  const unitPrice = numericQtd > 0 ? (numericCusto / numericQtd) : 0;
 
   const handleSave = () => {
     if (!nome.trim()) return;
@@ -168,13 +151,12 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
       id: insumo.id || Date.now().toString(),
       name: nome,
       category: categoria,
-      pesoBruto: pesoBrutoQty,
-      pesoLiquido: pesoLiquidoQty,
+      qty: quantidade,
       unit: unit,
-      fc: fc,
-      rendimento: `${pesoLiquidoQty}${unit}`, // Display the resulting usable amount
+      rendimento: `${quantidade}${unit}`,
       custo: `R$ ${custo}`,
-      defaultQty: pesoLiquidoQty, // Ensure it meshes gracefully with Ficha Tecnica
+      defaultQty: quantidade,
+      grossQty: quantidade,
     });
     onClose();
   };
@@ -277,50 +259,32 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
             </div>
           </div>
 
-          {/* Rendimento (PB and PL) */}
-          <div className="bg-[#252527] rounded-[12px] p-4 border border-[#2A2A2C]">
-            <div className="flex justify-between items-center mb-4">
-              <label className="text-[13px] font-semibold text-white">Cálculo de Correção</label>
-              <div className="text-[11px] bg-[#1E1E1E] px-2.5 py-1 rounded-[6px] text-[#868686]">FC: <span className="text-[#F5A623] font-bold">{fc}</span> | Rend: <span className="text-[#00B37E] font-bold">{rendimentoPerc}%</span></div>
+          {/* Quantidade */}
+          <div>
+            <label className="block text-[12px] text-[#868686] mb-2">Quantidade Comprada</label>
+            <div className="flex items-center bg-[#252527] border border-[#2A2A2C] rounded-[12px] overflow-hidden focus-within:border-[#F5A623] transition-colors">
+              <input
+                type="text"
+                value={quantidade}
+                onChange={(e) => setQuantidade(e.target.value)}
+                className="flex-1 bg-transparent px-4 py-3.5 text-[14px] text-white outline-none"
+                placeholder="Ex: 1000"
+              />
+              <span className="text-[13px] text-[#868686] pr-4 shrink-0">{unit}</span>
             </div>
-            <div className="grid grid-cols-2 gap-4 mb-3">
-              <div>
-                <label className="block text-[11px] text-[#868686] mb-1">Qtd Bruta (Comprada)</label>
-                <div className="flex items-center border-b border-[#3A3A3C] pb-1 focus-within:border-[#F5A623] transition-colors">
-                  <input
-                    type="text"
-                    value={pesoBrutoQty}
-                    onChange={(e) => setPesoBrutoQty(e.target.value)}
-                    className="w-full bg-transparent text-[14px] text-white outline-none"
-                    placeholder="Ex: 1000"
-                  />
-                  <span className="text-[11px] text-[#868686] pl-2">{unit}</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-[11px] text-[#868686] mb-1">Qtd Líquida/Útil (Receita)</label>
-                <div className="flex items-center border-b border-[#3A3A3C] pb-1 focus-within:border-[#F5A623] transition-colors">
-                  <input
-                    type="text"
-                    value={pesoLiquidoQty}
-                    onChange={(e) => setPesoLiquidoQty(e.target.value)}
-                    className="w-full bg-transparent text-[14px] text-white outline-none"
-                    placeholder="Ex: 800"
-                  />
-                  <span className="text-[11px] text-[#868686] pl-2">{unit}</span>
-                </div>
-              </div>
-            </div>
-            {/* Visualizando o custo real por unidade daquele insumo */}
-            {unitPricePL > 0 && (
-                <div className="pt-3 mt-2 border-t border-[#3A3A3C] flex items-center justify-between">
-                   <div className="text-[11px] text-[#868686]">Custo Real Mapeado (Líquido)</div>
-                   <div className="text-[12px] font-semibold text-white">
-                      R$ {unitPricePL.toFixed(4).replace('.', ',')} <span className="text-[#868686] font-normal text-[10px]">/ {unit}</span>
-                   </div>
-                </div>
-            )}
           </div>
+
+          {/* Custo unitário */}
+          {unitPrice > 0 && (
+            <div className="bg-[#252527] rounded-[12px] p-4 border border-[#2A2A2C]">
+              <div className="flex items-center justify-between">
+                <div className="text-[11px] text-[#868686]">Custo Unitário</div>
+                <div className="text-[12px] font-semibold text-white">
+                  R$ {unitPrice.toFixed(4).replace('.', ',')} <span className="text-[#868686] font-normal text-[10px]">/ {unit}</span>
+                </div>
+              </div>
+            </div>
+          )}
           
         </div>
 
@@ -354,8 +318,8 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave }) => {
   const [activeTab, setActiveTab] = useState('custos'); // 'custos' or 'operacional'
   const [nome, setNome] = useState(editingFicha ? editingFicha.name : '');
   
-  const fichaCategoryOptions = dashboardData.operational?.categories?.fichas || ['Prato Principal', 'Entrada', 'Sobremesa', 'Bebida', 'Acompanhamento', 'Insumo Preparado'];
-  const insumoCategoryOptions = dashboardData.operational?.categories?.insumos || ['Proteínas', 'Grãos', 'Vinhos', 'Molhos', 'Legumes', 'Temperos', 'Óleos', 'Laticínios', 'Outros'];
+  const fichaCategoryOptions = dashboardData.operational?.categories?.fichas || ['Prato Principal', 'Entrada', 'Sobremesa', 'Drinks, Coquetéis e Sucos', 'Acompanhamento'];
+  const insumoCategoryOptions = dashboardData.operational?.categories?.insumos || ['Proteínas', 'Grãos', 'Vinhos', 'Molhos', 'Legumes', 'Temperos', 'Óleos', 'Laticínios', 'Insumo Pronto Preparado', 'Outros'];
   const availableInsumos = dashboardData.operational?.insumos || [];
 
   const [categoria, setCategoria] = useState(editingFicha ? editingFicha.type : fichaCategoryOptions[0]);
@@ -386,11 +350,10 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave }) => {
 
   const calculatedInsumoCost = addedInsumos.reduce((sum, i) => {
       const totalPricePB = parseSafeNumber(i.price);
-      const pb = parseSafeNumber(i.grossQty || i.pesoBruto || i.defaultQty || 1) || 1;
+      const pb = parseSafeNumber(i.grossQty || i.defaultQty || 1) || 1;
       const unitCost = totalPricePB / pb;
-      const requiredPL = parseSafeNumber(i.qty);
-      const fc = parseSafeNumber(i.fc) || 1;
-      return sum + (requiredPL * fc * unitCost);
+      const requiredQty = parseSafeNumber(i.qty);
+      return sum + (requiredQty * unitCost);
   }, 0);
 
   // If imported and no insumos added yet, we use the imported CMV
@@ -431,7 +394,8 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave }) => {
       utensilios,
       fotoPrato,
       modoPreparo: modoPreparo.filter(s => s.trim() !== ''),
-      finalizacao
+      finalizacao,
+      lastUpdated: Date.now()
     };
     onSave(fichaData, isEditing);
     onClose();
@@ -620,14 +584,10 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave }) => {
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-[13px] text-white">{insumo.name}</div>
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-[#868686]">
-                                  <span>PL req: <span className="font-medium text-white">{insumo.qty}{insumo.unit}</span></span>
-                                  <span className="w-1 h-1 rounded-full bg-[#555]" />
-                                  <span>FC: {insumo.fc || '1.00'}</span>
-                                  <span className="w-1 h-1 rounded-full bg-[#555]" />
-                                  <span>PB req: {(parseSafeNumber(insumo.qty) * (parseSafeNumber(insumo.fc) || 1)).toFixed(1)}{insumo.unit}</span>
+                                  <span>Qtd: <span className="font-medium text-white">{insumo.qty}{insumo.unit}</span></span>
                                   <span className="w-1 h-1 rounded-full bg-[#555]" />
                                   <span className="text-[#00B37E]">
-                                    Cost: R$ {((parseSafeNumber(insumo.price) / (parseSafeNumber(insumo.grossQty || insumo.pesoBruto || insumo.defaultQty || 1) || 1)) * (parseSafeNumber(insumo.qty) * (parseSafeNumber(insumo.fc) || 1))).toFixed(2)}
+                                    Custo: R$ {((parseSafeNumber(insumo.price) / (parseSafeNumber(insumo.grossQty || insumo.defaultQty || 1) || 1)) * parseSafeNumber(insumo.qty)).toFixed(2)}
                                   </span>
                               </div>
                             </div>
@@ -991,20 +951,53 @@ const FichaTecnica = () => {
   const handleSaveInsumo = (updatedInsumo) => {
     let newInsumos;
     const exists = insumos.some(i => i.id === updatedInsumo.id);
-    
+
     if (exists) {
       newInsumos = insumos.map(i => i.id === updatedInsumo.id ? updatedInsumo : i);
     } else {
       newInsumos = [...insumos, updatedInsumo];
     }
-    
-    // Update Context
-    updateDashboardData({
+
+    const updatePayload = {
         operational: {
             ...dashboardData.operational,
             insumos: newInsumos
         }
-    });
+    };
+
+    // Auto-create ficha técnica for "Insumo Pronto Preparado"
+    if (updatedInsumo.category === 'Insumo Pronto Preparado' && !exists) {
+      const autoFicha = {
+        id: `auto_${updatedInsumo.id}`,
+        name: updatedInsumo.name,
+        type: 'Insumo Pronto Preparado',
+        progress: 0,
+        insumos: 0,
+        ingredients: [],
+        custoInsumos: updatedInsumo.custo,
+        custoEmbalagem: 'R$ 0,00',
+        rendimento: updatedInsumo.rendimento || '0gr',
+        custoTotal: updatedInsumo.custo,
+        precoVenda: '',
+        vendasMes: '0',
+        lastUpdated: Date.now(),
+        isImported: false
+      };
+
+      // Add "Insumo Pronto Preparado" to fichas categories if not present
+      const fichaCategories = [...(updatePayload.operational.categories?.fichas || [])];
+      if (!fichaCategories.includes('Insumo Pronto Preparado')) {
+        fichaCategories.push('Insumo Pronto Preparado');
+        updatePayload.operational.categories = {
+          ...updatePayload.operational.categories,
+          fichas: fichaCategories
+        };
+      }
+
+      updatePayload.operational.fichas = [...(dashboardData.operational?.fichas || []), autoFicha];
+    }
+
+    updateDashboardData(updatePayload);
   };
 
   const handleDeleteFicha = (id) => {

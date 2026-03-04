@@ -20,7 +20,7 @@ import OnboardingForm from './OnboardingForm';
 
 const Dashboard = () => {
   /* MOVED TO CONTEXT */
-  const { dashboardData } = useDashboard();
+  const { dashboardData, updateDashboardData } = useDashboard();
   const [activePage, setActivePage] = useState('home');
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -126,7 +126,20 @@ const Dashboard = () => {
 
           {/* COL 2 - Faturamento */}
           <div>
-            <FinanceOverview data={dashboardData.revenue} />
+            <FinanceOverview data={dashboardData.revenue} onUpdateRevenue={(monthIdx, value) => {
+              const formData = dashboardData.formData || {};
+              const revenueHistory = [...(formData.revenue_history || [])];
+              const mm = String(monthIdx + 1).padStart(2, '0');
+              const yyyy = new Date().getFullYear();
+              const monthStr = `${mm}/${yyyy}`;
+              const existingIdx = revenueHistory.findIndex(r => r.month === monthStr);
+              if (existingIdx >= 0) {
+                revenueHistory[existingIdx] = { month: monthStr, amount: `R$ ${value}` };
+              } else {
+                revenueHistory.push({ month: monthStr, amount: `R$ ${value}` });
+              }
+              updateDashboardData({ ...formData, revenue_history: revenueHistory });
+            }} />
           </div>
 
           {/* COL 3 - Ponto de Equilíbrio */}
@@ -214,9 +227,10 @@ const Dashboard = () => {
       {/* Onboarding Edit Modal */}
       {showOnboarding && (
         <div className="fixed inset-0 z-100 bg-black/60 backdrop-blur-sm">
-          <OnboardingForm 
-            onClose={() => setShowOnboarding(false)} 
+          <OnboardingForm
+            onClose={() => setShowOnboarding(false)}
             onComplete={() => setShowOnboarding(false)}
+            isEditing
           />
         </div>
       )}

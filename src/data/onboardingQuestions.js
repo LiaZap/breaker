@@ -100,7 +100,7 @@ export const onboardingQuestions = [
     type: 'composite',
     fields: [
       { id: 'rent', label: 'Valor do Aluguel (Mensal)', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'iptu_annual', label: 'Valor IPTU (anual)', type: 'currency', placeholder: 'R$ 0,00' }
+      { id: 'iptu_annual', label: 'Valor IPTU (Anual)', type: 'currency', placeholder: 'R$ 0,00' }
     ]
   },
 
@@ -114,8 +114,10 @@ export const onboardingQuestions = [
     fields: [
       { id: 'energy', label: 'Energia Elétrica', type: 'currency', placeholder: 'R$ 0,00' },
       { id: 'water', label: 'Água / Esgoto', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'internet', label: 'Internet / Telefone', type: 'currency', placeholder: 'R$ 0,00' },
-      { id: 'security', label: 'Segurança / Alarme', type: 'currency', placeholder: 'R$ 0,00' }
+      { id: 'internet', label: 'Internet', type: 'currency', placeholder: 'R$ 0,00' },
+      { id: 'telefone', label: 'Telefone', type: 'currency', placeholder: 'R$ 0,00' },
+      { id: 'security', label: 'Alarme', type: 'currency', placeholder: 'R$ 0,00', helpText: 'Sistema eletrônico de alarme monitorado.' },
+      { id: 'security_guard', label: 'Segurança / Ronda / Vigia', type: 'currency', placeholder: 'R$ 0,00', helpText: 'Ronda: patrulha periódica. Vigia: presença constante no local.' }
     ]
   },
 
@@ -140,9 +142,25 @@ export const onboardingQuestions = [
     title: 'Custos Operacionais Fixos',
     description: 'Gás de cozinha e Óleo. Recomendamos considerar fixo para simplificação.',
     type: 'composite',
+    infoText: 'Estes custos são normalmente considerados como custos variáveis, portanto use a metodologia Breaker para aumentar a precificação.',
     fields: [
       { id: 'kitchen_gas', label: 'Gás de Cozinha (Média)', type: 'currency', placeholder: 'R$ 0,00' },
       { id: 'kitchen_oil', label: 'Óleo / Gordura (Média)', type: 'currency', placeholder: 'R$ 0,00' }
+    ]
+  },
+
+  // Etapa 08b: Serviços Recorrentes Mensais
+  {
+    id: 'monthly_services',
+    section: 'Infraestrutura',
+    title: 'Serviços Recorrentes Mensais',
+    description: 'Adicione serviços recorrentes mensais contratados.',
+    type: 'dynamic_list_calc',
+    itemLabel: 'Serviço',
+    calcType: 'none',
+    fields: [
+      { id: 'name', label: 'Descrição do Serviço', type: 'text', placeholder: 'Ex: Manutenção de ar-condicionado' },
+      { id: 'value', label: 'Valor Mensal', type: 'currency', placeholder: 'R$ 0,00' }
     ]
   },
 
@@ -159,10 +177,11 @@ export const onboardingQuestions = [
     type: 'dynamic_list_calc',
     itemLabel: 'Equipamento',
     calcType: 'depreciation',
+    infoText: 'Use o custo fixo com duração de 5 anos para abater esse valor.',
     fields: [
         { id: 'name', label: 'Equipamento', type: 'text', placeholder: 'Ex: Forno Combinado' },
         { id: 'value', label: 'Valor Pago', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'lifespan', label: 'Vida Útil (Anos)', type: 'number', placeholder: 'Ex: 10' }
+        { id: 'lifespan', label: 'Vida Útil (Anos)', type: 'number', placeholder: '5', readOnly: true, defaultValue: '5' }
     ]
   },
 
@@ -174,11 +193,12 @@ export const onboardingQuestions = [
     description: 'Softwares, serviços e impostos.',
     type: 'composite',
     fields: [
-        { id: 'software_pdv', label: 'Software PDV', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'accountant', label: 'Contador', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'taxes_das', label: 'Imposto Fixo (MEI/DAS)', type: 'currency', placeholder: 'R$ 0,00', dependsOnGlobal: 'identity.is_mei', dependsValue: 'Sim' },
-        { id: 'simples_rate', label: 'Alíquota Simples Nacional (%)', type: 'text', placeholder: 'Automático (Via Fat. Anual)', helpText: 'Alíquota efetiva (Anexo I). O sistema fará o cálculo dinâmico baseado no seu histórico de Vendas (Etapa 14).', dependsOnGlobal: 'identity.tax_regime', dependsValue: 'Simples Nacional', hideIfGlobal: { field: 'identity.is_mei', value: 'Sim' } },
-        { id: 'card_machine_rent', label: 'Aluguel Maquininha', type: 'currency', placeholder: 'R$ 0,00' }
+        { id: 'systems_count', label: 'Quantos sistemas você usa?', type: 'select', options: ['1 Sistema', '2 Sistemas', '3+ Sistemas'] },
+        { id: 'software_pdv', label: 'Software / Sistema (Mensal)', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'accountant', label: 'Serviços Contábeis', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'taxes_das', label: 'Imposto Fixo (MEI/DAS)', type: 'currency', placeholder: 'R$ 87,05', defaultValue: '87,05', readOnly: true, dependsOnGlobal: 'identity.is_mei', dependsValue: 'Sim' },
+        { id: 'simples_rate', label: 'Alíquota Simples Nacional (%)', type: 'text', placeholder: 'Automático (Via Fat. Anual)', hidden: true },
+        { id: 'card_machine_rent', label: 'Aluguel Maquininha', type: 'currency', placeholder: 'R$ 0,00', helpText: 'Caso você alugue a máquina.' }
     ]
   },
 
@@ -213,7 +233,8 @@ export const onboardingQuestions = [
     type: 'composite',
     fields: [
         { id: 'agency', label: 'Agência / Freelancer', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'ads_budget', label: 'Verba Tráfego Pago', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'ads_budget', label: 'Investimento em Tráfego Pago', type: 'currency', placeholder: 'R$ 0,00' },
+        { id: 'ads_platform', label: 'Plataforma / Canal', type: 'text', placeholder: 'Ex: Google Ads, Instagram...' },
         { id: 'gifts_cost', label: 'Custo Brindes (Unit)', type: 'currency', placeholder: 'R$ 0,00' },
         { id: 'gifts_qty', label: 'Qtd Brindes/Mês', type: 'number', placeholder: 'Ex: 50' }
     ]
@@ -250,22 +271,7 @@ export const onboardingQuestions = [
     ]
   },
 
-  // Etapa 14: Faturamento
-  {
-    id: 'revenue_history',
-    section: 'Marketing e Vendas',
-    title: 'Histórico de Faturamento',
-    description: 'Faturamento bruto dos últimos meses disponível.',
-    type: 'dynamic_list_calc',
-    itemLabel: 'Mês',
-    fields: [
-        { id: 'month', label: 'Mês/Ano', type: 'text', placeholder: 'MM/AAAA' },
-        { id: 'amount', label: 'Faturamento', type: 'currency', placeholder: 'R$ 0,00' },
-        { id: 'sales_percentage', label: '% de Vendas Mensais', type: 'percentage', placeholder: 'Ex: 100%', helpText: 'Percentual do faturamento vindo de vendas' }
-    ]
-  },
-
-  // Etapa 15: Outros Custos Fixos
+  // Etapa 14: Outros Custos Fixos (movido para antes do faturamento)
   {
     id: 'other_fixed_costs',
     section: 'Infraestrutura',
@@ -277,6 +283,22 @@ export const onboardingQuestions = [
     fields: [
         { id: 'name', label: 'Descrição', type: 'text', placeholder: 'Ex: Manutenção predial' },
         { id: 'value', label: 'Valor Mensal', type: 'currency', placeholder: 'R$ 0,00' }
+    ]
+  },
+
+  // Etapa 15: Faturamento
+  {
+    id: 'revenue_history',
+    section: 'Marketing e Vendas',
+    title: 'Histórico de Faturamento',
+    description: 'Faturamento bruto dos últimos meses disponível.',
+    type: 'dynamic_list_calc',
+    itemLabel: 'Mês',
+    minItems: 3,
+    infoText: 'Preencha o máximo de histórico de faturamento possível. Recomendamos no mínimo 3 meses.',
+    fields: [
+        { id: 'month', label: 'Mês/Ano', type: 'text', placeholder: 'MM/AAAA' },
+        { id: 'amount', label: 'Faturamento', type: 'currency', placeholder: 'R$ 0,00' }
     ]
   }
 ];

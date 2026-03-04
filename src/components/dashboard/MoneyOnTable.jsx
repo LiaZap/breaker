@@ -43,9 +43,12 @@ const MoneyOnTable = ({ data }) => {
         {data.items && data.items.length > 0 ? (
           data.items.map((item, idx) => (
             <div key={idx} className="flex items-center justify-between py-1.5 border-b border-[#2A2A2C] last:border-0">
-              <div className="flex flex-col">
-                <span className="font-medium text-[11px] text-[#C4C4C4]">{item.label}</span>
-                <span className="font-normal text-[9px] text-[#FF9406]">{item.pct}</span>
+              <div className="flex items-center gap-2">
+                <div className="w-[8px] h-[8px] rounded-full shrink-0" style={{ backgroundColor: item.color || '#FF9406' }} />
+                <div className="flex flex-col">
+                  <span className="font-medium text-[11px] text-[#C4C4C4]">{item.label}</span>
+                  <span className="font-normal text-[9px]" style={{ color: item.color || '#FF9406' }}>{item.pct}</span>
+                </div>
               </div>
               <span className="font-medium text-[12px] text-[#E1E1E1]">R$ {item.value}</span>
             </div>

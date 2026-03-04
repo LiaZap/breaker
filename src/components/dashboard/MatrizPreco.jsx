@@ -41,7 +41,11 @@ const MatrizPreco = () => {
   };
 
   const itemsWithMetrics = useMemo(() => {
-    const displayItems = dashboardData.menuEngineering || []; 
+    const displayItems = dashboardData.menuEngineering || [];
+    const allFichas = dashboardData.operational?.fichas || [];
+    const fichaNames = new Set(allFichas.map(f => f.name?.toLowerCase().trim()));
+    const fichaIds = new Set(allFichas.map(f => `ft_${f.id}`));
+
     return displayItems.map(item => ({
       ...item,
       category: item.category || 'Geral',
@@ -49,8 +53,9 @@ const MatrizPreco = () => {
       price: parseCurrency(item.price),
       cost: parseCurrency(item.cost),
       margin: parseCurrency(item.price) - parseCurrency(item.cost),
+      hasFicha: fichaIds.has(item.id) || fichaNames.has(item.name?.toLowerCase().trim()),
     }));
-  }, [dashboardData.menuEngineering]);
+  }, [dashboardData.menuEngineering, dashboardData.operational?.fichas]);
 
   const uniqueMenuCategories = useMemo(() => {
     const cats = new Set(itemsWithMetrics.map(item => item.category));
@@ -175,7 +180,7 @@ const MatrizPreco = () => {
                     >
                       <div className="flex items-center gap-2 overflow-hidden">
                         <div className={`w-1.5 h-1.5 rounded-full shrink-0`} style={{ backgroundColor: config.color }} />
-                        <span className="text-[11px] text-[#E1E1E1] truncate">{item.name}</span>
+                        <span className={`text-[11px] truncate ${item.hasFicha ? 'text-[#E1E1E1]' : 'text-red-500'}`} title={!item.hasFicha ? 'Produto sem ficha técnica' : ''}>{item.name}</span>
                       </div>
                       <div className="flex items-center gap-4 text-[10px]">
                         <span className="text-[#868686]">Vendas <span className="text-white font-medium">{item.sales}</span></span>

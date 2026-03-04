@@ -20,8 +20,8 @@ export const DashboardProvider = ({ children }) => {
       fichas: [],
       insumos: [],
       categories: {
-          insumos: ['Proteínas', 'Grãos', 'Vinhos', 'Molhos', 'Legumes', 'Temperos', 'Óleos', 'Laticínios', 'Outros'],
-          fichas: ['Prato Principal', 'Entrada', 'Sobremesa', 'Bebida', 'Acompanhamento', 'Insumo Preparado']
+          insumos: ['Proteínas', 'Grãos', 'Vinhos', 'Molhos', 'Legumes', 'Temperos', 'Óleos', 'Laticínios', 'Insumo Pronto Preparado', 'Outros'],
+          fichas: ['Prato Principal', 'Entrada', 'Sobremesa', 'Drinks, Coquetéis e Sucos', 'Acompanhamento']
       }
     },
     menuEngineering: [],
@@ -218,10 +218,15 @@ export const DashboardProvider = ({ children }) => {
         addCost(parseCurrency(formData.location_costs.iptu_annual) / 12);
     }
     
-    // Utilities, Recurring, Operational Fixed
-    sumComposite('utilities', ['energy', 'water', 'internet', 'security']);
+    // Utilities (with new split fields), Recurring, Operational Fixed
+    sumComposite('utilities', ['energy', 'water', 'internet', 'telefone', 'security', 'security_guard']);
     sumComposite('recurring_services', ['pest_control', 'waste_removal', 'cleaning_supplies']);
     sumComposite('operational_fixed', ['kitchen_gas', 'kitchen_oil']);
+
+    // Monthly Services (dynamic list)
+    if (formData.monthly_services && Array.isArray(formData.monthly_services)) {
+        formData.monthly_services.forEach(item => addCost(item.value));
+    }
     
     // Admin Systems
     sumComposite('admin_systems', ['software_pdv', 'accountant', 'card_machine_rent']);
@@ -252,11 +257,11 @@ export const DashboardProvider = ({ children }) => {
         });
     }
 
-    // Equipment (Depreciation)
+    // Equipment (Depreciation — fixed 5-year lifespan = 60 months)
     if (formData.equipment && Array.isArray(formData.equipment)) {
         formData.equipment.forEach(eq => {
             const val = parseCurrency(eq.value);
-            const years = parseFloat(eq.lifespan) || 0;
+            const years = parseFloat(eq.lifespan) || 5; // Fixed at 5 years
             if (years > 0) fixedCosts += val / (years * 12);
         });
     }
@@ -286,7 +291,11 @@ export const DashboardProvider = ({ children }) => {
                  const fgtsProv = (prov13 + provFerias) * 0.08;
                  const multa = (fgts + fgtsProv) * 0.50;
                  const aviso = base / 12;
-                 personnelCosts += base + fgts + prov13 + provFerias + fgtsProv + multa + aviso;
+                 // Férias/13o/FGTS sobre Aviso Prévio (provisioning rights accrued during notice period)
+                 const aviso13 = aviso / 12;
+                 const avisoFerias = (aviso + aviso / 3) / 12;
+                 const avisoFgts = (aviso13 + avisoFerias) * 0.08;
+                 personnelCosts += base + fgts + prov13 + provFerias + fgtsProv + multa + aviso + aviso13 + avisoFerias + avisoFgts;
              } else {
                  personnelCosts += base;
              }
@@ -341,10 +350,21 @@ export const DashboardProvider = ({ children }) => {
         if (count > 0) cardFeePercentage = totalRates / count / 100;
     }
 
-    // Variable costs = Card fees + Taxes (Simples) + CMV (only if fichas filled)
+    // Marketplace commissions (iFood, Rappi, etc.) — variable cost
+    let marketplaceCommissionCost = 0;
+    if (formData.fees_marketplaces && Array.isArray(formData.fees_marketplaces)) {
+        formData.fees_marketplaces.forEach(m => {
+            const commission = parseFloat(String(m.commission || '0').replace(',', '.').replace('%', '')) || 0;
+            const salesPct = parseFloat(String(m.sales_percentage || '0').replace(',', '.').replace('%', '')) || 0;
+            // Commission applies only to the portion of revenue from this marketplace
+            marketplaceCommissionCost += currentRevenue * (salesPct / 100) * (commission / 100);
+        });
+    }
+
+    // Variable costs = Card fees + CMV + Marketplace commissions
     const cardFeeCost = currentRevenue * cardFeePercentage;
     const cmvCost = currentRevenue * cmvPercentage;
-    const variableCosts = cardFeeCost + cmvCost;
+    const variableCosts = cardFeeCost + cmvCost + marketplaceCommissionCost;
 
     // 2. METRICS CALCULATIONS
     
@@ -385,9 +405,16 @@ export const DashboardProvider = ({ children }) => {
     const totalVariableCosts = variableCosts + taxCostSimples;
     const totalCosts = totalFixedCosts + totalVariableCosts;
     const profit = currentRevenue - totalCosts;
-    // Contribution Margin = Revenue - All Variable Costs (CMV + Card Fees + Taxes)
-    const contributionMargin = currentRevenue - totalVariableCosts; 
+    // DRE Cascade:
+    // 1. Receita Líquida = Receita Bruta - Impostos - Taxas de Venda (cartão + marketplace)
+    const taxesAndFees = taxCostSimples + cardFeeCost + marketplaceCommissionCost;
+    const receitaLiquida = currentRevenue - taxesAndFees;
+    // 2. Margem de Contribuição = Receita Líquida - CMV
+    const contributionMargin = receitaLiquida - cmvCost;
+    // 3. Lucro Líquido = MC - Custos Fixos
+    // (profit = currentRevenue - totalCosts, which is equivalent)
     const marginPercentage = currentRevenue > 0 ? (profit / currentRevenue) * 100 : 0;
+    const contributionMarginPercentageDisplay = currentRevenue > 0 ? (contributionMargin / currentRevenue) * 100 : 0;
     
     // iFood % for "Dinheiro na Mesa"
     let ifoodPercentage = 0;
@@ -406,6 +433,18 @@ export const DashboardProvider = ({ children }) => {
     const fixedCostPercentage = currentRevenue > 0 ? (totalFixedCosts / currentRevenue) * 100 : 0;
     const cmvPercentageDisplay = cmvPercentage * 100;
 
+    // BASE = %CF + %Impostos + %Cartão/Voucher (+ Royalties if franchise)
+    // Marketplace commissions weighted by sales_percentage
+    let marketplaceFeePct = 0;
+    if (formData.fees_marketplaces && Array.isArray(formData.fees_marketplaces)) {
+        formData.fees_marketplaces.forEach(m => {
+            const commission = parseFloat(String(m.commission || '0').replace(',', '.').replace('%', '')) || 0;
+            const salesPct = parseFloat(String(m.sales_percentage || '0').replace(',', '.').replace('%', '')) || 0;
+            marketplaceFeePct += (commission * salesPct) / 100;
+        });
+    }
+    const basePercentage = fixedCostPercentage + (percentTaxSimples * 100) + (cardFeePercentage * 100) + marketplaceFeePct;
+
     // "Dinheiro na Mesa" calculation:
     // Sum excess % above thresholds: iFood>23%, CF>33%, CMV>30%
     let moneyOnTableTotal = 0;
@@ -414,17 +453,18 @@ export const DashboardProvider = ({ children }) => {
     if (ifoodPercentage > 23 && currentRevenue > 0) {
         const excess = ((ifoodPercentage - 23) / 100) * currentRevenue;
         moneyOnTableTotal += excess;
-        moneyOnTableItems.push({ label: `iFood (${ifoodPercentage.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(ifoodPercentage - 23).toFixed(1)}% acima` });
+        moneyOnTableItems.push({ label: `iFood (${ifoodPercentage.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(ifoodPercentage - 23).toFixed(1)}% acima`, color: '#FF4560' });
     }
     if (fixedCostPercentage > 33 && currentRevenue > 0) {
         const excess = ((fixedCostPercentage - 33) / 100) * currentRevenue;
         moneyOnTableTotal += excess;
-        moneyOnTableItems.push({ label: `Custo Fixo (${fixedCostPercentage.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(fixedCostPercentage - 33).toFixed(1)}% acima` });
+        const fcColor = fixedCostPercentage > 40 ? '#FF4560' : '#FF9406'; // Red if high, orange if at threshold
+        moneyOnTableItems.push({ label: `Custo Fixo (${fixedCostPercentage.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(fixedCostPercentage - 33).toFixed(1)}% acima`, color: fcColor });
     }
     if (cmvPercentageDisplay > 30 && currentRevenue > 0 && hasCmvData) {
         const excess = ((cmvPercentageDisplay - 30) / 100) * currentRevenue;
         moneyOnTableTotal += excess;
-        moneyOnTableItems.push({ label: `CMV (${cmvPercentageDisplay.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(cmvPercentageDisplay - 30).toFixed(1)}% acima` });
+        moneyOnTableItems.push({ label: `CMV (${cmvPercentageDisplay.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(cmvPercentageDisplay - 30).toFixed(1)}% acima`, color: '#FFC100' });
     }
 
     // Break Even Point (Ponto de Equilíbrio)
@@ -435,17 +475,7 @@ export const DashboardProvider = ({ children }) => {
     const newDashboardData = {
         ...initialData,
         formData: formData, // Persist raw form data for re-editing
-        operational: dashboardData.operational || initialData.operational, 
-        restaurant: { 
-            name: formData?.identity?.restaurant_name || "Seu Restaurante", 
-            category: formData?.identity?.cuisine_type || "Gastronomia" 
-        },
-        user: {
-            ...initialData.user,
-            name: formData?.user_info?.user_name || "Usuário",
-            initials: (formData?.user_info?.user_name || "US").substring(0, 2).toUpperCase(),
-            photo: formData?.user_info?.user_photo || null
-        },
+        operational: dashboardData.operational || initialData.operational,
         period: {
             date: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }),
             status: profit >= 0 ? "Lucrativo" : "Prejuízo",
@@ -457,9 +487,8 @@ export const DashboardProvider = ({ children }) => {
             history: revenueHistory, 
             annualTotal: formatMoney(totalAnnualRevenue),
             status: profit >= 0 ? "Positivo" : "Alerta",
-            change: "0%", 
+            change: "0%",
             risk: { label: "Estável", count: "-" },
-            annualTotal: formatMoney(totalAnnualRevenue),
             cards: [
                 {
                     label: "Custos Fixos Totais",
@@ -485,9 +514,9 @@ export const DashboardProvider = ({ children }) => {
             min: "0",
             max: formatMoney(Math.max(currentRevenue, breakEvenValue) * 1.5), 
             base: {
-                value: marginPercentage.toFixed(0),
-                status: marginPercentage > 50 ? "Alerta" : (marginPercentage >= 10 ? "Saudável" : "Baixo"),
-                range: "Recomendado até 50%"
+                value: basePercentage.toFixed(0),
+                status: basePercentage > 60 ? "Crítico" : (basePercentage > 55 ? "Alerta" : (basePercentage >= 45 ? "Saudável" : "Baixo")),
+                range: "Saudável entre 45% e 55%"
             }
         },
         cards: {
@@ -497,11 +526,32 @@ export const DashboardProvider = ({ children }) => {
                 hasData: currentRevenue > 0 && (ifoodPercentage > 0 || fixedCostPercentage > 0 || hasCmvData),
                 percentage: currentRevenue > 0 && moneyOnTableTotal > 0 ? `${((moneyOnTableTotal / currentRevenue) * 100).toFixed(1)}%` : "0%"
             },
-            technicalSheets: [
-                { label: 'CMV Teórico', value: hasCmvData ? `${cmvPercentageDisplay.toFixed(0)}%` : '0%' },
-                { label: 'Fichas Desatualizadas', value: '0' },
-                { label: 'Produtos Sem Ficha', value: '0' },
-            ],
+            technicalSheets: (() => {
+                // CMV Teórico médio: average of (custoTotal / precoVenda) across all fichas with price
+                const allFichas = dashboardData.operational?.fichas || [];
+                let cmvTeorico = hasCmvData ? `${cmvPercentageDisplay.toFixed(0)}%` : '0%';
+                const fichasWithPrice = allFichas.filter(f => parseCurrency(f.precoVenda) > 0 && parseCurrency(f.custoTotal) > 0);
+                if (fichasWithPrice.length > 0) {
+                    const avgCmv = fichasWithPrice.reduce((sum, f) => sum + (parseCurrency(f.custoTotal) / parseCurrency(f.precoVenda)), 0) / fichasWithPrice.length;
+                    cmvTeorico = `${(avgCmv * 100).toFixed(0)}%`;
+                }
+
+                // Fichas desatualizadas: not updated in 30+ days
+                const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+                const outdated = allFichas.filter(f => f.lastUpdated && f.lastUpdated < thirtyDaysAgo).length;
+
+                // Produtos sem ficha: menu engineering items without a matching ficha
+                const menuItems = dashboardData.menuEngineering || [];
+                const fichaNames = new Set(allFichas.map(f => f.name?.toLowerCase().trim()));
+                const fichaIds = new Set(allFichas.map(f => `ft_${f.id}`));
+                const withoutFicha = menuItems.filter(m => !fichaIds.has(m.id) && !fichaNames.has(m.name?.toLowerCase().trim())).length;
+
+                return [
+                    { label: 'CMV Teórico', value: cmvTeorico },
+                    { label: 'Fichas Desatualizadas', value: String(outdated) },
+                    { label: 'Produtos Sem Ficha', value: String(withoutFicha) },
+                ];
+            })(),
             costStructure: (() => {
                 // Admin e Mkt: ALL admin_systems costs + ALL marketing_structure costs
                 const adminMktTotal = 
@@ -523,14 +573,20 @@ export const DashboardProvider = ({ children }) => {
                     parseCurrency(formData?.marketing_structure?.ads_budget || 0) -
                     (parseCurrency(formData?.marketing_structure?.gifts_cost || 0) * (parseFloat(formData?.marketing_structure?.gifts_qty) || 0));
 
+                // Fixed costs % over average annual revenue
+                const activeMonthsCount = revenueHistory.filter(v => v > 0).length;
+                const avgMonthlyRev = activeMonthsCount > 0 ? totalAnnualRevenue / activeMonthsCount : 0;
+                const fixedCostPctAnnual = avgMonthlyRev > 0 ? Math.round((totalFixedCosts / avgMonthlyRev) * 100) + "%" : "0%";
+
                 return {
                     total: formatMoney(totalCosts),
                     percentage: currentRevenue > 0 ? Math.round((totalCosts / currentRevenue) * 100) + "%" : "0%",
+                    fixedCostPercentage: fixedCostPctAnnual,
                     breakdown: [
                         { label: 'Pessoal + Sócios', value: `R$ ${formatMoney(personnelCosts)}` },
-                        { label: 'Infraestrutura', value: `R$ ${formatMoney(Math.max(0, infraCosts))}` }, 
+                        { label: 'Infraestrutura', value: `R$ ${formatMoney(Math.max(0, infraCosts))}` },
                         { label: 'CMV Estimado', value: `R$ ${formatMoney(cmvCost)}` },
-                        { label: 'Admin e Mkt', value: `R$ ${formatMoney(adminMktTotal)}` }, 
+                        { label: 'Admin e Mkt', value: `R$ ${formatMoney(adminMktTotal)}` },
                     ]
                 };
             })(),
@@ -551,10 +607,23 @@ export const DashboardProvider = ({ children }) => {
             title: formData?.identity?.restaurant_name || "Seu Restaurante",
             subtitle: "Dados baseados no seu preenchimento de onboarding.",
             tags: [
-                { label: 'Faturamento', active: false },
+                { label: `Rec. Líquida: R$ ${formatMoney(receitaLiquida)}`, active: false },
+                { label: `MC: ${contributionMarginPercentageDisplay.toFixed(0)}%`, active: false },
                 { label: `Lucro: R$ ${formatMoney(profit)}`, active: true, color: profit >= 0 ? '#E2FD89' : '#FF4560' },
-                { label: `Margem: ${marginPercentage.toFixed(0)}%`, active: false }
             ]
+        },
+        // DRE data for detailed view
+        dre: {
+            receitaBruta: formatMoney(currentRevenue),
+            impostos: formatMoney(taxCostSimples),
+            taxasVenda: formatMoney(cardFeeCost + marketplaceCommissionCost),
+            receitaLiquida: formatMoney(receitaLiquida),
+            cmv: formatMoney(cmvCost),
+            margemContribuicao: formatMoney(contributionMargin),
+            margemContribuicaoPct: contributionMarginPercentageDisplay.toFixed(1),
+            custosFixos: formatMoney(totalFixedCosts),
+            lucroLiquido: formatMoney(profit),
+            lucroLiquidoPct: marginPercentage.toFixed(1)
         },
         // Keep static Tips & Comparison for now
         marketComparison: initialData.marketComparison,

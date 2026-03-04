@@ -178,7 +178,7 @@ const AutocompleteField = ({ field, value, onChange }) => {
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
-const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
+const OnboardingForm = ({ onClose = () => {}, onComplete = () => {}, isEditing = false }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [formData, setFormData] = useState({});
   const [direction, setDirection] = useState(0);
@@ -193,7 +193,7 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
 
   const currentQuestion = onboardingQuestions[currentStepIndex];
   const totalSteps = onboardingQuestions.length;
-  const totalWithReg = totalSteps + 1;
+  const totalWithReg = isEditing ? totalSteps : totalSteps + 1;
   const progress = showRegistration ? 100 : ((currentStepIndex + 1) / totalWithReg) * 100;
 
   // Format currency helper
@@ -281,8 +281,12 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
       setCurrentStepIndex(prev => prev + 1);
     } else {
       updateDashboardData(formData);
-      setDirection(1);
-      setShowRegistration(true);
+      if (isEditing) {
+        if (onComplete) onComplete(formData);
+      } else {
+        setDirection(1);
+        setShowRegistration(true);
+      }
     }
   };
 
@@ -398,6 +402,8 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
       return (
           <div className={`${question.gridLayout ? 'grid grid-cols-2 gap-4' : 'flex flex-col gap-6'}`}>
               {question.fields.map(field => {
+                  // Check hidden fields
+                  if (field.hidden) return null;
                   // Check visibility logic
                   if (field.dependsOn) {
                       const dependencyValue = formData[question.id]?.[field.dependsOn];
@@ -416,7 +422,17 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
 
                   return (
                     <div key={field.id}>
-                        <label className="block text-xs text-secondary mb-1 opacity-70">{field.label}</label>
+                        <label className="text-xs text-secondary mb-1 opacity-70 flex justify-between items-center">
+                            {field.label}
+                            {field.helpText && (
+                                <div className="group relative flex items-center">
+                                    <span className="text-white/50 cursor-pointer hover:text-white transition-colors text-[10px]">(?)</span>
+                                    <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block w-48 p-2 bg-[#333] border border-[#444] text-white text-[10px] rounded shadow-xl z-50 text-right pointer-events-none">
+                                        {field.helpText}
+                                    </div>
+                                </div>
+                            )}
+                        </label>
                         {field.type === 'select' ? (
                              <select
                                 className="font-['Plus_Jakarta_Sans'] font-medium bg-transparent border-b border-[#333333] focus:border-white outline-none pb-2 transition-colors w-full text-[18px] text-[rgba(255,255,255,0.9)]"
@@ -466,16 +482,22 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                         ) : (
                             <input
                                 type="text"
-                                value={formData[question.id]?.[field.id] || ''}
-                                onChange={(e) => handleCompositeChange(question.id, field.id, e.target.value, field.type)}
+                                value={formData[question.id]?.[field.id] || field.defaultValue || ''}
+                                onChange={(e) => !field.readOnly && handleCompositeChange(question.id, field.id, e.target.value, field.type)}
                                 placeholder={field.placeholder}
-                                className="font-['Plus_Jakarta_Sans'] font-medium bg-transparent border-b border-[#333333] focus:border-white outline-none pb-2 transition-colors w-full"
+                                readOnly={field.readOnly}
+                                className={`font-['Plus_Jakarta_Sans'] font-medium bg-transparent border-b border-[#333333] focus:border-white outline-none pb-2 transition-colors w-full ${field.readOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                                 style={{ fontSize: '18px', color: 'rgba(255, 255, 255, 0.9)' }}
                             />
                         )}
                     </div>
                   );
               })}
+              {question.infoText && (
+                  <div className="mt-4 p-3 bg-[#FFC100]/10 border border-[#FFC100]/30 rounded-lg">
+                      <p className="text-[#FFC100] text-xs">{question.infoText}</p>
+                  </div>
+              )}
           </div>
       );
   };
@@ -593,9 +615,30 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
 
   // Dynamic List Handler
   const handleAddDynamicItem = (questionId) => {
+      const question = onboardingQuestions.find(q => q.id === questionId);
+      let newItem = {};
+
+      // Pre-fill defaultValues from field definitions
+      if (question?.fields) {
+          question.fields.forEach(f => { if (f.defaultValue) newItem[f.id] = f.defaultValue; });
+      }
+
+      // Auto-fill month for revenue_history
+      if (questionId === 'revenue_history') {
+          setFormData(prev => {
+              const existing = prev[questionId] || [];
+              const now = new Date();
+              const d = new Date(now.getFullYear(), now.getMonth() - 1 - existing.length, 1);
+              const mm = String(d.getMonth() + 1).padStart(2, '0');
+              const yyyy = d.getFullYear();
+              return { ...prev, [questionId]: [...existing, { month: `${mm}/${yyyy}` }] };
+          });
+          return;
+      }
+
       setFormData(prev => ({
           ...prev,
-          [questionId]: [...(prev[questionId] || []), {}]
+          [questionId]: [...(prev[questionId] || []), newItem]
       }));
   };
 
@@ -607,11 +650,57 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
       });
   };
 
+  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  const getMonthLabel = (question, item, idx) => {
+      if (question.id === 'revenue_history' && item.month) {
+          const parts = item.month.split('/');
+          if (parts.length === 2) {
+              const monthIdx = parseInt(parts[0], 10) - 1;
+              if (monthIdx >= 0 && monthIdx <= 11) {
+                  return `${monthNames[monthIdx]} ${parts[1]}`;
+              }
+          }
+      }
+      return `${question.itemLabel} ${idx + 1}`;
+  };
+
   const renderDynamicListCalc = (question) => {
-      const items = formData[question.id] || [{}]; // Start with 1 empty item if empty
-      
+      // Initialize with minItems if specified (e.g., revenue_history needs 3)
+      const minItems = question.minItems || 1;
+      let items = formData[question.id];
+      if (!items || items.length === 0) {
+          // Auto-generate items with pre-filled months for revenue_history
+          if (question.id === 'revenue_history') {
+              const now = new Date();
+              items = Array.from({ length: minItems }, (_, i) => {
+                  const d = new Date(now.getFullYear(), now.getMonth() - 1 - i, 1);
+                  const mm = String(d.getMonth() + 1).padStart(2, '0');
+                  const yyyy = d.getFullYear();
+                  return { month: `${mm}/${yyyy}` };
+              });
+              // Auto-set in form data
+              setFormData(prev => ({ ...prev, [question.id]: items }));
+          } else {
+              items = Array.from({ length: minItems }, () => {
+                  // Pre-fill defaultValues from fields
+                  const defaults = {};
+                  question.fields.forEach(f => { if (f.defaultValue) defaults[f.id] = f.defaultValue; });
+                  return defaults;
+              });
+              if (Object.keys(items[0]).length > 0) {
+                  setFormData(prev => ({ ...prev, [question.id]: items }));
+              }
+          }
+      }
+
       return (
           <div className="flex flex-col gap-4 max-h-[500px] overflow-y-auto pr-2">
+              {question.infoText && (
+                  <div className="p-3 bg-[#FFC100]/10 border border-[#FFC100]/30 rounded-lg">
+                      <p className="text-[#FFC100] text-xs">{question.infoText}</p>
+                  </div>
+              )}
               {items.map((item, idx) => {
                   // Calculate Display Values based on type
                   let costDisplay = null;
@@ -631,8 +720,8 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                   return (
                     <div key={idx} className="p-4 bg-[#2A2A2A] rounded-lg border border-[#333] relative">
                         <div className="flex justify-between items-center mb-3">
-                            <div className="text-xs text-[#FFC100] font-bold uppercase">{question.itemLabel} {idx + 1}</div>
-                            {items.length > 1 && (
+                            <div className="text-xs text-[#FFC100] font-bold uppercase">{getMonthLabel(question, item, idx)}</div>
+                            {items.length > (question.minItems || 1) && (
                                 <button onClick={() => handleRemoveDynamicItem(question.id, idx)} className="text-red-500 text-xs hover:underline">Remover</button>
                             )}
                         </div>
@@ -688,10 +777,11 @@ const OnboardingForm = ({ onClose = () => {}, onComplete = () => {} }) => {
                                     ) : (
                                         <input
                                             type="text"
-                                            value={item[field.id] || ''}
-                                            onChange={(e) => handleGroupChange(question.id, idx, field.id, e.target.value, field.type)}
+                                            value={item[field.id] || field.defaultValue || ''}
+                                            onChange={(e) => !field.readOnly && handleGroupChange(question.id, idx, field.id, e.target.value, field.type)}
                                             placeholder={field.placeholder}
-                                            className="w-full bg-transparent border-b border-[#444] text-white text-sm pb-1 outline-none focus:border-[#FFC100]"
+                                            readOnly={field.readOnly}
+                                            className={`w-full bg-transparent border-b border-[#444] text-white text-sm pb-1 outline-none focus:border-[#FFC100] ${field.readOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         />
                                     )}
                                 </div>

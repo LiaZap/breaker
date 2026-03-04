@@ -10,7 +10,7 @@ const CostStructure = ({ data }) => {
             Estrutura de custos
           </h3>
           <p className="font-normal text-[11px] text-[#868686]">
-            Custos totais da operação
+            Custos fixos e variáveis do período
           </p>
         </div>
         <div className="shrink-0">
@@ -23,18 +23,17 @@ const CostStructure = ({ data }) => {
         </div>
       </div>
 
-      {/* Value + Action */}
+      {/* Value */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-baseline gap-1.5">
           <span className="font-semibold text-[16px] text-[#FF9406]">R$</span>
           <span className="font-semibold text-[24px] text-white tracking-tight">{data.total}</span>
         </div>
-        <span className="font-medium text-[11px] text-[#959387] flex items-center gap-1">
-          Plano de Ação
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-            <path fillRule="evenodd" clipRule="evenodd" d="M5.99998 4.5C5.86737 4.5 5.74019 4.44732 5.64643 4.35355C5.55266 4.25979 5.49998 4.13261 5.49998 4C5.49998 3.86739 5.55266 3.74021 5.64643 3.64645C5.74019 3.55268 5.86737 3.5 5.99998 3.5H12C12.1326 3.5 12.2598 3.55268 12.3535 3.64645C12.4473 3.74021 12.5 3.86739 12.5 4V10C12.5 10.1326 12.4473 10.2598 12.3535 10.3536C12.2598 10.4473 12.1326 10.5 12 10.5C11.8674 10.5 11.7402 10.4473 11.6464 10.3536C11.5527 10.2598 11.5 10.1326 11.5 10V5.20667L4.35331 12.3533C4.25853 12.4417 4.13316 12.4897 4.00363 12.4874C3.8741 12.4852 3.75051 12.4327 3.6589 12.3411C3.56729 12.2495 3.51481 12.1259 3.51253 11.9963C3.51024 11.8668 3.55833 11.7414 3.64665 11.6467L10.7933 4.5H5.99998Z" fill="#959387"/>
-          </svg>
-        </span>
+        {data.fixedCostPercentage && (
+          <div className="shrink-0 flex items-center justify-center bg-[#FFC100]/15 rounded-md px-2.5 h-[24px]">
+            <span className="text-[#FFC100] text-[10px] font-bold">CF: {data.fixedCostPercentage}</span>
+          </div>
+        )}
       </div>
 
       {/* Progress Bar */}
