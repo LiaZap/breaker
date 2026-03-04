@@ -257,6 +257,7 @@ export const onboardingQuestions = [
     calcType: 'none',
     fields: [
         { id: 'provider', label: 'Operadora', type: 'select', options: ['PagSeguro', 'Stone', 'Cielo', 'Rede', 'Getnet', 'Outra'] },
+        { id: 'custom_provider', label: 'Nome da Operadora', type: 'text', placeholder: 'Ex: Sumup, Mercado Pago...', dependsOn: { field: 'provider', value: 'Outra' } },
         { id: 'debit_rate', label: 'Taxa Débito (%)', type: 'percentage', placeholder: '1.99%' },
         { id: 'credit_rate', label: 'Taxa Crédito (%)', type: 'percentage', placeholder: '3.49%' }
     ]
