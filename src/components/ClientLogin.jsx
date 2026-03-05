@@ -43,17 +43,26 @@ const ClientLogin = ({ onLogin, onAdminAccess }) => {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#101010] flex items-center justify-center font-jakarta text-white overflow-hidden">
-      
-      {/* Background Ambience */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#FFC100] blur-[180px] opacity-[0.03]" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#F5A623] blur-[180px] opacity-[0.03]" />
+    <div className="relative min-h-screen bg-black flex items-center justify-center font-jakarta text-white overflow-hidden">
 
-      <motion.div 
+      {/* Video Background */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+        src="/login-bg.mp4"
+      />
+
+      {/* Dark Overlay */}
+      <div className="absolute inset-0 bg-black/60" />
+
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative w-full max-w-[420px] p-10 flex flex-col items-center"
+        className="relative z-10 w-full max-w-[420px] p-10 flex flex-col items-center"
       >
         
         {/* Logo */}
