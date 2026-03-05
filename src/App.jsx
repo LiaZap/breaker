@@ -15,8 +15,11 @@ function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const hash = params.get('hash');
+    const path = window.location.pathname;
 
-    if (hash) {
+    if (path === '/admin') {
+      setCurrentPage('admin-login');
+    } else if (hash) {
       setCurrentPage('splash');
     } else {
       setCurrentPage('client-login');
@@ -56,10 +59,7 @@ function App() {
     <>
       {/* CLIENT LOGIN */}
       {currentPage === 'client-login' && (
-        <ClientLogin 
-          onLogin={handleClientLogin} 
-          onAdminAccess={() => setCurrentPage('admin-login')}
-        />
+        <ClientLogin onLogin={handleClientLogin} />
       )}
 
       {/* ADMIN FLOW */}

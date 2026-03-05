@@ -118,13 +118,21 @@ const AdminPanel = () => {
                       {client.status}
                     </div>
                     
-                    <button 
+                    <button
+                      onClick={() => { window.open(`${window.location.origin}/?hash=${client.hash}`, '_blank'); }}
+                      className="flex items-center gap-2 text-[12px] text-[#86D993] font-medium hover:underline"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                        <path d="M15 3H21V9M21 3L13 11M10 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21H17C18.1046 21 19 20.1046 19 19V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Acessar Painel
+                    </button>
+
+                    <button
                       onClick={() => copyLink(client.hash)}
                       className="flex items-center gap-2 text-[12px] text-[#F5A623] font-medium hover:underline"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <path d="M9 15L15 9M9 9L15 15M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="0" /> 
-                         {/* Link Icon */}
                         <path d="M13.8284 10.1716L16.6569 7.34315C17.4379 6.5621 18.7042 6.5621 19.4853 7.34315C20.2663 8.1242 20.2663 9.39052 19.4853 10.1716L16.6569 13M10.1716 13.8284L7.34315 16.6569C6.5621 17.4379 5.29577 17.4379 4.51472 16.6569C3.73367 15.8758 3.73367 14.6095 4.51472 13.8284L7.34315 11M8.75736 15.2426L15.2426 8.75736" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                       Copiar Link

@@ -5,7 +5,7 @@ import boltIcon from '../assets/bolt.svg';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
-const ClientLogin = ({ onLogin, onAdminAccess }) => {
+const ClientLogin = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -158,13 +158,6 @@ const ClientLogin = ({ onLogin, onAdminAccess }) => {
           </button>
         </form>
 
-        {/* Admin Access */}
-        <button 
-          onClick={onAdminAccess}
-          className="mt-8 text-[#555] text-[12px] hover:text-[#888] transition-colors"
-        >
-          Acesso Administrativo →
-        </button>
 
       </motion.div>
     </div>
