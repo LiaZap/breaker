@@ -310,7 +310,7 @@ const EditarInsumoModal = ({ insumo, onClose, onSave, onDelete }) => {
 import FichaTecnicaPrint from './FichaTecnicaPrint';
 
 // ============ MODAL: Criar/Editar Ficha Técnica ============
-const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onSyncInsumo }) => {
+const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onSyncInsumo, onDelete }) => {
   const isEditing = !!editingFicha;
   const { dashboardData } = useDashboard();
   
@@ -884,6 +884,15 @@ const CriarFichaTecnicaModal = ({ onClose, editingFicha, onSave, onSyncInsumo })
                     </button>
                 )}
                 
+                {isEditing && onDelete && (
+                  <button
+                    onClick={() => { if (window.confirm('Tem certeza que deseja excluir esta ficha?')) onDelete(editingFicha.id); }}
+                    className="px-4 py-3.5 rounded-[12px] bg-[#FF4560]/10 text-[#FF4560] text-[14px] font-medium hover:bg-[#FF4560]/20 transition-colors"
+                  >
+                    Excluir
+                  </button>
+                )}
+
                 <button
                 onClick={handleSave}
                 className="bg-[#F5A623] text-black font-semibold text-[14px] px-8 py-3.5 rounded-[12px] hover:bg-[#E5961E] transition-colors"

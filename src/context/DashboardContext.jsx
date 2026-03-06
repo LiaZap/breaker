@@ -507,6 +507,7 @@ export const DashboardProvider = ({ children }) => {
         ...initialData,
         formData: formData, // Persist raw form data for re-editing
         operational: dashboardData.operational || initialData.operational,
+        menuEngineering: dashboardData.menuEngineering || [],
         period: {
             date: new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }),
             status: profit >= 0 ? "Lucrativo" : "Prejuízo",
