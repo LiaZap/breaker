@@ -51,17 +51,20 @@ const FinanceOverview = ({ data, onUpdateRevenue }) => {
       )}
 
       {/* Bar Chart - Only months with data + current month */}
-      <div className="h-[60px] flex items-end gap-[6px] w-full mb-4 px-1 relative">
+      <div className="h-[60px] flex items-end justify-between gap-[3px] w-full mb-4 px-1 relative">
         {(() => {
             const monthsShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
             const currentMonthIdx = new Date().getMonth();
 
-            // Show only up to current month, reversed (current first)
-            const visibleMonths = history.slice(0, currentMonthIdx + 1);
-            const maxVal = Math.max(...visibleMonths, 1);
-            const reversed = visibleMonths.map((val, i) => ({ val, i })).reverse();
+            // Show 12 months in reverse: current month first, then backwards wrapping to previous year
+            const months12 = [];
+            for (let m = 0; m < 12; m++) {
+              const idx = (currentMonthIdx - m + 12) % 12;
+              months12.push({ val: history[idx] || 0, i: idx });
+            }
+            const maxVal = Math.max(...months12.map(m => m.val), 1);
 
-            return reversed.map(({ val, i }) => {
+            return months12.map(({ val, i }) => {
               const isCurrent = i === currentMonthIdx;
               const isSelected = selectedMonth === i;
               const hasData = val > 0;
@@ -79,7 +82,7 @@ const FinanceOverview = ({ data, onUpdateRevenue }) => {
               return (
               <div
                 key={i}
-                className="group relative flex flex-col items-center justify-end h-full w-[20px]"
+                className="group relative flex flex-col items-center justify-end h-full flex-1"
                 onMouseEnter={() => setHoveredMonth(i)}
                 onMouseLeave={() => setHoveredMonth(null)}
                 onClick={() => {
