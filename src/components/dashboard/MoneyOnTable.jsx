@@ -1,9 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const MoneyOnTable = ({ data }) => {
+  const [activeIdx, setActiveIdx] = useState(null);
+
+  // Calculate total raw value for percentage widths
+  const items = data.items || [];
+  const totalRaw = items.reduce((sum, item) => {
+    const val = parseFloat(String(item.value).replace(/\./g, '').replace(',', '.')) || 0;
+    return sum + val;
+  }, 0);
+
   return (
     <div className="bg-[#1B1B1D] rounded-[16px] p-3 h-full flex flex-col justify-between relative overflow-hidden group min-h-0">
-      
+
       {/* Header */}
       <div className="flex items-start justify-between mb-2 shrink-0">
         <div>
@@ -24,7 +33,7 @@ const MoneyOnTable = ({ data }) => {
       </div>
 
       {/* Main Value */}
-      <div className="flex items-baseline gap-1.5 mb-4 shrink-0">
+      <div className="flex items-baseline gap-1.5 mb-3 shrink-0">
         <span className="font-semibold text-[16px] text-[#FF9406]">R$</span>
         <span className="font-semibold text-[24px] text-white tracking-tight">{data.total}</span>
         {data.percentage && data.percentage !== "0%" && (
@@ -36,32 +45,71 @@ const MoneyOnTable = ({ data }) => {
         )}
       </div>
 
-      {/* Breakdown Items */}
-      <div className="flex flex-col gap-2 flex-1 min-h-0">
-        {data.items && data.items.length > 0 ? (
-          data.items.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between py-1.5 border-b border-[#2A2A2C] last:border-0">
-              <div className="flex items-center gap-2">
-                <div className="w-[8px] h-[8px] rounded-full shrink-0" style={{ backgroundColor: item.color || '#FF9406' }} />
-                <div className="flex flex-col">
-                  <span className="font-medium text-[11px] text-[#C4C4C4]">{item.label}</span>
-                  <span className="font-normal text-[9px]" style={{ color: item.color || '#FF9406' }}>{item.pct}</span>
-                </div>
-              </div>
-              <span className="font-medium text-[12px] text-[#E1E1E1]">R$ {item.value}</span>
-            </div>
-          ))
-        ) : (
-          <div className="flex items-start flex-1 opacity-50">
-            <p className="text-[10px] text-[#7E7E7E] leading-relaxed">
-              {!data.hasData
-                ? "Preencha o % de vendas nos marketplaces e fichas técnicas para ver valores."
-                : "Nenhum indicador acima do limite. Operação saudável!"
-              }
-            </p>
+      {/* Stacked Progress Bar */}
+      {items.length > 0 ? (
+        <div className="flex flex-col gap-3 flex-1 min-h-0">
+          {/* Bar */}
+          <div className="w-full h-[10px] bg-[#2A2A2C] rounded-full overflow-hidden flex">
+            {items.map((item, idx) => {
+              const val = parseFloat(String(item.value).replace(/\./g, '').replace(',', '.')) || 0;
+              const widthPct = totalRaw > 0 ? (val / totalRaw) * 100 : 0;
+              return (
+                <div
+                  key={idx}
+                  className="h-full cursor-pointer transition-opacity duration-150"
+                  style={{
+                    width: `${widthPct}%`,
+                    backgroundColor: item.color || '#FF9406',
+                    opacity: activeIdx !== null && activeIdx !== idx ? 0.3 : 1,
+                  }}
+                  onMouseEnter={() => setActiveIdx(idx)}
+                  onMouseLeave={() => setActiveIdx(null)}
+                  onClick={() => setActiveIdx(activeIdx === idx ? null : idx)}
+                />
+              );
+            })}
           </div>
-        )}
-      </div>
+
+          {/* Active Item Detail (on hover/click) */}
+          {activeIdx !== null && items[activeIdx] && (
+            <div className="flex items-center justify-between px-1 py-2 bg-[#252527] rounded-[10px] border border-[#333]">
+              <div className="flex items-center gap-2">
+                <div className="w-[8px] h-[8px] rounded-full shrink-0" style={{ backgroundColor: items[activeIdx].color || '#FF9406' }} />
+                <span className="font-medium text-[11px] text-[#E1E1E1]">{items[activeIdx].label}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-semibold" style={{ color: items[activeIdx].color || '#FF9406' }}>{items[activeIdx].pct}</span>
+                <span className="font-semibold text-[12px] text-white">R$ {items[activeIdx].value}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Legend dots */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-auto">
+            {items.map((item, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-1.5 cursor-pointer"
+                onMouseEnter={() => setActiveIdx(idx)}
+                onMouseLeave={() => setActiveIdx(null)}
+                onClick={() => setActiveIdx(activeIdx === idx ? null : idx)}
+              >
+                <div className="w-[6px] h-[6px] rounded-full shrink-0" style={{ backgroundColor: item.color || '#FF9406' }} />
+                <span className="text-[9px] text-[#999]">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-start flex-1 opacity-50">
+          <p className="text-[10px] text-[#7E7E7E] leading-relaxed">
+            {!data.hasData
+              ? "Preencha o % de vendas nos marketplaces e fichas técnicas para ver valores."
+              : "Nenhum indicador acima do limite. Operação saudável!"
+            }
+          </p>
+        </div>
+      )}
 
       {/* Insight Section */}
       <div className="flex items-center gap-3 mt-auto pt-3 shrink-0 border-t border-[#2A2A2C]">
