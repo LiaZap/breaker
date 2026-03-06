@@ -51,7 +51,7 @@ const FinanceOverview = ({ data, onUpdateRevenue }) => {
       )}
 
       {/* Bar Chart - Only months with data + current month */}
-      <div className="h-[60px] flex items-end justify-between gap-[6px] w-full mb-4 px-1 relative">
+      <div className="h-[60px] flex items-end gap-[6px] w-full mb-4 px-1 relative">
         {(() => {
             const monthsShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
             const currentMonthIdx = new Date().getMonth();
@@ -78,7 +78,7 @@ const FinanceOverview = ({ data, onUpdateRevenue }) => {
               return (
               <div
                 key={i}
-                className="group relative flex flex-col items-center justify-end h-full flex-1"
+                className="group relative flex flex-col items-center justify-end h-full w-[20px]"
                 onMouseEnter={() => setHoveredMonth(i)}
                 onMouseLeave={() => setHoveredMonth(null)}
                 onClick={() => {

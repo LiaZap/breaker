@@ -85,6 +85,8 @@ export const DashboardProvider = ({ children }) => {
             return merged;
           });
           setClientDataLoaded(true);
+          // Schedule recalculation so computed fields (pctOfRevenue etc.) are up to date
+          recalcPendingRef.current = true;
         })
         .catch(err => {
           console.error("Failed to load client data from API", err);
