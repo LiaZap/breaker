@@ -427,17 +427,21 @@ export const DashboardProvider = ({ children }) => {
     const marginPercentage = currentRevenue > 0 ? (profit / currentRevenue) * 100 : 0;
     const contributionMarginPercentageDisplay = currentRevenue > 0 ? (contributionMargin / currentRevenue) * 100 : 0;
     
-    // iFood % for "Dinheiro na Mesa"
-    let ifoodPercentage = 0;
+    // Marketplace percentages for "Dinheiro na Mesa"
+    const marketplaceSalesData = [];
     if (formData.fees_marketplaces && Array.isArray(formData.fees_marketplaces)) {
-        const ifoodEntry = formData.fees_marketplaces.find(m => m.provider === 'iFood');
-        if (ifoodEntry && ifoodEntry.sales_percentage) {
-            ifoodPercentage = parseFloat(String(ifoodEntry.sales_percentage || '0').replace(',', '.').replace('%', '')) || 0;
-        }
+        formData.fees_marketplaces.forEach(m => {
+            const salesPct = parseFloat(String(m.sales_percentage || '0').replace(',', '.').replace('%', '')) || 0;
+            if (salesPct > 0) {
+                const name = m.provider === 'Outro' ? (m.custom_provider || 'Outro') : m.provider;
+                marketplaceSalesData.push({ name, salesPct });
+            }
+        });
     }
-    // Also check for explicit ifood_sales_percentage field (fallback)
-    if (formData.ifood_sales_percentage && ifoodPercentage === 0) {
-        ifoodPercentage = parseFloat(String(formData.ifood_sales_percentage).replace(',', '.').replace('%', '')) || 0;
+    // Legacy fallback
+    if (formData.ifood_sales_percentage && marketplaceSalesData.length === 0) {
+        const pct = parseFloat(String(formData.ifood_sales_percentage).replace(',', '.').replace('%', '')) || 0;
+        if (pct > 0) marketplaceSalesData.push({ name: 'iFood', salesPct: pct });
     }
 
     // Fixed Cost % over revenue
@@ -461,11 +465,13 @@ export const DashboardProvider = ({ children }) => {
     let moneyOnTableTotal = 0;
     const moneyOnTableItems = [];
 
-    if (ifoodPercentage > 23 && currentRevenue > 0) {
-        const excess = ((ifoodPercentage - 23) / 100) * currentRevenue;
-        moneyOnTableTotal += excess;
-        moneyOnTableItems.push({ label: `iFood (${ifoodPercentage.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(ifoodPercentage - 23).toFixed(1)}% acima`, color: '#FF4560' });
-    }
+    marketplaceSalesData.forEach(mp => {
+        if (mp.salesPct > 23 && currentRevenue > 0) {
+            const excess = ((mp.salesPct - 23) / 100) * currentRevenue;
+            moneyOnTableTotal += excess;
+            moneyOnTableItems.push({ label: `${mp.name} (${mp.salesPct.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(mp.salesPct - 23).toFixed(1)}% acima`, color: '#FF4560' });
+        }
+    });
     if (fixedCostPercentage > 33 && currentRevenue > 0) {
         const excess = ((fixedCostPercentage - 33) / 100) * currentRevenue;
         moneyOnTableTotal += excess;
@@ -546,7 +552,7 @@ export const DashboardProvider = ({ children }) => {
             moneyOnTable: {
                 total: formatMoney(moneyOnTableTotal),
                 items: moneyOnTableItems,
-                hasData: currentRevenue > 0 && (ifoodPercentage > 0 || fixedCostPercentage > 0 || hasCmvData),
+                hasData: currentRevenue > 0 && (marketplaceSalesData.length > 0 || fixedCostPercentage > 0 || hasCmvData),
                 percentage: currentRevenue > 0 && moneyOnTableTotal > 0 ? `${((moneyOnTableTotal / currentRevenue) * 100).toFixed(1)}%` : "0%"
             },
             technicalSheets: (() => {

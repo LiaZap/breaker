@@ -55,7 +55,7 @@ const MoneyOnTable = ({ data }) => {
           <div className="flex items-start flex-1 opacity-50">
             <p className="text-[10px] text-[#7E7E7E] leading-relaxed">
               {!data.hasData
-                ? "Preencha o % de vendas no iFood e fichas técnicas para ver valores."
+                ? "Preencha o % de vendas nos marketplaces e fichas técnicas para ver valores."
                 : "Nenhum indicador acima do limite. Operação saudável!"
               }
             </p>
@@ -73,7 +73,7 @@ const MoneyOnTable = ({ data }) => {
         </div>
         <p className="text-[10px] text-[#A3A3A3] leading-normal flex-1">
           <span className="font-bold text-[#E1E1E1]">Limites saudáveis: </span>
-          iFood até 23%, Custo Fixo até 33% e CMV até 30% do faturamento.
+          Marketplace até 23%, Custo Fixo até 33% e CMV até 30% do faturamento.
         </p>
       </div>
 
