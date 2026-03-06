@@ -3,12 +3,10 @@ import React, { useState } from 'react';
 const MoneyOnTable = ({ data }) => {
   const [activeIdx, setActiveIdx] = useState(null);
 
-  // Calculate total raw value for percentage widths
   const items = data.items || [];
-  const totalRaw = items.reduce((sum, item) => {
-    const val = parseFloat(String(item.value).replace(/\./g, '').replace(',', '.')) || 0;
-    return sum + val;
-  }, 0);
+  // Sum of all pctOfRevenue segments
+  const totalPct = items.reduce((sum, item) => sum + (item.pctOfRevenue || 0), 0);
+  const remainingPct = Math.max(0, 100 - totalPct);
 
   return (
     <div className="bg-[#1B1B1D] rounded-[16px] p-3 h-full flex flex-col justify-between relative overflow-hidden group min-h-0">
@@ -51,8 +49,7 @@ const MoneyOnTable = ({ data }) => {
           {/* Bar */}
           <div className="w-full h-[10px] bg-[#2A2A2C] rounded-full overflow-hidden flex">
             {items.map((item, idx) => {
-              const val = parseFloat(String(item.value).replace(/\./g, '').replace(',', '.')) || 0;
-              const widthPct = totalRaw > 0 ? (val / totalRaw) * 100 : 0;
+              const widthPct = item.pctOfRevenue || 0;
               return (
                 <div
                   key={idx}
@@ -68,11 +65,22 @@ const MoneyOnTable = ({ data }) => {
                 />
               );
             })}
+            {/* Remaining grey portion */}
+            {remainingPct > 0 && (
+              <div
+                className="h-full"
+                style={{
+                  width: `${remainingPct}%`,
+                  backgroundColor: '#3A3A3C',
+                  opacity: activeIdx !== null ? 0.3 : 0.5,
+                }}
+              />
+            )}
           </div>
 
           {/* Active Item Detail (on hover/click) */}
           {activeIdx !== null && items[activeIdx] && (
-            <div className="flex items-center justify-between px-1 py-2 bg-[#252527] rounded-[10px] border border-[#333]">
+            <div className="flex items-center justify-between px-2 py-2 bg-[#252527] rounded-[10px] border border-[#333]">
               <div className="flex items-center gap-2">
                 <div className="w-[8px] h-[8px] rounded-full shrink-0" style={{ backgroundColor: items[activeIdx].color || '#FF9406' }} />
                 <span className="font-medium text-[11px] text-[#E1E1E1]">{items[activeIdx].label}</span>
