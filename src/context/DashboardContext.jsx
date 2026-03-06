@@ -470,13 +470,22 @@ export const DashboardProvider = ({ children }) => {
     let moneyOnTableTotal = 0;
     const moneyOnTableItems = [];
 
+    // Combine all marketplaces into one item using average percentage
+    let mpExcessTotal = 0;
+    const mpAboveThreshold = [];
     marketplaceSalesData.forEach(mp => {
         if (mp.salesPct > 23 && currentRevenue > 0) {
             const excess = ((mp.salesPct - 23) / 100) * currentRevenue;
-            moneyOnTableTotal += excess;
-            moneyOnTableItems.push({ label: `${mp.name} (${mp.salesPct.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(mp.salesPct - 23).toFixed(1)}% acima`, color: '#FF4560', pctOfRevenue: mp.salesPct });
+            mpExcessTotal += excess;
+            mpAboveThreshold.push(mp);
         }
     });
+    if (mpAboveThreshold.length > 0) {
+        moneyOnTableTotal += mpExcessTotal;
+        const avgPct = mpAboveThreshold.reduce((s, m) => s + m.salesPct, 0) / mpAboveThreshold.length;
+        const mpNames = mpAboveThreshold.map(m => m.name).join(', ');
+        moneyOnTableItems.push({ label: `Marketplaces (${avgPct.toFixed(0)}%)`, value: formatMoney(mpExcessTotal), pct: `${(avgPct - 23).toFixed(1)}% acima`, color: '#FF4560', pctOfRevenue: avgPct });
+    }
     if (fixedCostPercentage > 33 && currentRevenue > 0) {
         const excess = ((fixedCostPercentage - 33) / 100) * currentRevenue;
         moneyOnTableTotal += excess;
