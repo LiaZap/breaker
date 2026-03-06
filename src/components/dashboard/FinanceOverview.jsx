@@ -50,33 +50,33 @@ const FinanceOverview = ({ data, onUpdateRevenue }) => {
         </div>
       )}
 
-      {/* Bar Chart - Daily History (30 Days) */}
+      {/* Bar Chart - Only months with data + current month */}
       <div className="h-[60px] flex items-end justify-between gap-[6px] w-full mb-4 px-1 relative">
         {(() => {
             const monthsShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
             const currentMonthIdx = new Date().getMonth();
-            const maxVal = Math.max(...history, 1);
 
-            return history.map((val, i) => {
+            // Show only up to current month (no future empty bars)
+            const visibleMonths = history.slice(0, currentMonthIdx + 1);
+            const maxVal = Math.max(...visibleMonths, 1);
+
+            return visibleMonths.map((val, i) => {
               const isCurrent = i === currentMonthIdx;
-              const isFuture = i > currentMonthIdx;
               const isSelected = selectedMonth === i;
               const hasData = val > 0;
 
-              // Determine Color - Don't highlight current month if no data
-              let bgColor = 'bg-[#333]'; // Default/Future/No data
+              let bgColor = 'bg-[#333]';
               if (isSelected && hasData) bgColor = 'bg-[#FF9406]';
-              else if (isCurrent && hasData) bgColor = 'bg-[#FF9406]'; 
-              else if (hasData) bgColor = 'bg-[#E1E1E1]'; // Past with data
+              else if (isCurrent && hasData) bgColor = 'bg-[#FF9406]';
+              else if (hasData) bgColor = 'bg-[#E1E1E1]';
 
-              // Determine Opacity
               let opacity = 0.3;
-              if (isFuture || !hasData) opacity = 0.2;
+              if (!hasData) opacity = 0.2;
               else if (isSelected || (isCurrent && hasData) || hoveredMonth === i) opacity = 1;
               else opacity = 0.6;
 
               return (
-              <div 
+              <div
                 key={i}
                 className="group relative flex flex-col items-center justify-end h-full flex-1"
                 onMouseEnter={() => setHoveredMonth(i)}
@@ -89,20 +89,20 @@ const FinanceOverview = ({ data, onUpdateRevenue }) => {
                   }
                 }}
               >
-                 {/* Tooltip on Hover */}
-                 <AnimateTooltip 
-                    show={hoveredMonth === i} 
-                    value={val} 
-                    label={monthsShort[i]} 
+                 <AnimateTooltip
+                    show={hoveredMonth === i}
+                    value={val}
+                    label={monthsShort[i]}
                  />
 
-                <div 
-                  className={`w-full max-w-[12px] rounded-[2px] transition-all duration-300 cursor-pointer ${bgColor} hover:bg-[#FF9406]`}
-                  style={{ 
-                      height: val > 0 ? `${Math.max((val / maxVal) * 100, 10)}%` : '4px', 
+                <div
+                  className={`w-full max-w-[16px] rounded-[3px] transition-all duration-300 cursor-pointer ${bgColor} hover:bg-[#FF9406]`}
+                  style={{
+                      height: val > 0 ? `${Math.max((val / maxVal) * 100, 15)}%` : '4px',
                       opacity: opacity
                   }}
                 />
+                <span className="text-[7px] text-[#555] mt-1">{monthsShort[i]}</span>
               </div>
             )});
         })()}
