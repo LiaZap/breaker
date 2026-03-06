@@ -519,7 +519,17 @@ export const DashboardProvider = ({ children }) => {
             history: revenueHistory, 
             annualTotal: formatMoney(totalAnnualRevenue),
             status: profit >= 0 ? "Positivo" : "Alerta",
-            change: "0%",
+            change: (() => {
+                // Find current month index and previous month with data
+                const curIdx = searchOrder.find(idx => revenueHistory[idx] > 0);
+                if (curIdx === undefined) return "0%";
+                // Find previous month with data (skip current)
+                const prevIdx = searchOrder.find(idx => idx !== curIdx && revenueHistory[idx] > 0);
+                if (prevIdx === undefined || revenueHistory[prevIdx] === 0) return "0%";
+                const change = ((revenueHistory[curIdx] - revenueHistory[prevIdx]) / revenueHistory[prevIdx]) * 100;
+                const sign = change >= 0 ? "+" : "";
+                return `${sign}${change.toFixed(1)}%`;
+            })(),
             risk: { label: "Estável", count: "-" },
             cards: [
                 {

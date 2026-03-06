@@ -149,9 +149,17 @@ const FinanceOverview = ({ data, onUpdateRevenue }) => {
 
          {/* Badge & Status */}
          <div className="flex flex-col items-end">
-            <div className="px-2 py-0.5 rounded-[6px] bg-[#E2FD89]/10 border border-[#E2FD89]/20 mb-1">
-               <span className="text-[10px] font-semibold text-[#E2FD89]">Aumentou {data.change}</span>
-            </div>
+            {(() => {
+              const isNegative = data.change?.startsWith('-');
+              const isZero = data.change === '0%' || data.change === '+0.0%';
+              const color = isNegative ? '#FD8989' : '#E2FD89';
+              const label = isZero ? 'Estável' : (isNegative ? 'Diminuiu' : 'Aumentou');
+              return (
+                <div className="px-2 py-0.5 rounded-[6px] mb-1" style={{ backgroundColor: `${color}15`, border: `1px solid ${color}33` }}>
+                  <span className="text-[10px] font-semibold" style={{ color }}>{label} {data.change}</span>
+                </div>
+              );
+            })()}
             <div className="flex items-center gap-1 opacity-60">
                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#E1E1E1" strokeWidth="2"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>
                <span className="text-[9px] text-[#E1E1E1]">{data.status}</span>
