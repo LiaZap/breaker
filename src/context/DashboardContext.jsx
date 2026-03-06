@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useRef, useEffect } from 'react';
 
 const DashboardContext = createContext();
 
@@ -40,6 +40,7 @@ export const DashboardProvider = ({ children }) => {
   const [dashboardData, setDashboardData] = useState(initialData);
   const [clientDataLoaded, setClientDataLoaded] = useState(false);
   const [clientDataError, setClientDataError] = useState(false);
+  const recalcPendingRef = useRef(false);
 
   // Load Client Data if Hash exists
   React.useEffect(() => {
@@ -133,6 +134,8 @@ export const DashboardProvider = ({ children }) => {
              }
              return updated;
          });
+         // Schedule full recalculation so financial metrics update
+         recalcPendingRef.current = true;
          return;
     }
 
@@ -672,6 +675,14 @@ export const DashboardProvider = ({ children }) => {
         }).catch(e => console.error("Sync failed", e));
     }
   };
+
+  // After operational/menuEngineering direct updates, recalculate financial metrics
+  useEffect(() => {
+    if (recalcPendingRef.current && dashboardData.formData && Object.keys(dashboardData.formData).length > 0) {
+      recalcPendingRef.current = false;
+      updateDashboardData(dashboardData.formData);
+    }
+  });
 
   return (
     <DashboardContext.Provider value={{ dashboardData, updateDashboardData, clientDataLoaded, clientDataError }}>
