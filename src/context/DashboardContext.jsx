@@ -472,19 +472,19 @@ export const DashboardProvider = ({ children }) => {
         if (mp.salesPct > 23 && currentRevenue > 0) {
             const excess = ((mp.salesPct - 23) / 100) * currentRevenue;
             moneyOnTableTotal += excess;
-            moneyOnTableItems.push({ label: `${mp.name} (${mp.salesPct.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(mp.salesPct - 23).toFixed(1)}% acima`, color: '#FF4560', pctOfRevenue: currentRevenue > 0 ? (excess / currentRevenue) * 100 : 0 });
+            moneyOnTableItems.push({ label: `${mp.name} (${mp.salesPct.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(mp.salesPct - 23).toFixed(1)}% acima`, color: '#FF4560', pctOfRevenue: mp.salesPct });
         }
     });
     if (fixedCostPercentage > 33 && currentRevenue > 0) {
         const excess = ((fixedCostPercentage - 33) / 100) * currentRevenue;
         moneyOnTableTotal += excess;
         const fcColor = fixedCostPercentage > 40 ? '#FF4560' : '#FF9406';
-        moneyOnTableItems.push({ label: `Custo Fixo (${fixedCostPercentage.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(fixedCostPercentage - 33).toFixed(1)}% acima`, color: fcColor, pctOfRevenue: currentRevenue > 0 ? (excess / currentRevenue) * 100 : 0 });
+        moneyOnTableItems.push({ label: `Custo Fixo (${fixedCostPercentage.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(fixedCostPercentage - 33).toFixed(1)}% acima`, color: fcColor, pctOfRevenue: fixedCostPercentage });
     }
     if (cmvPercentageDisplay > 30 && currentRevenue > 0 && hasCmvData) {
         const excess = ((cmvPercentageDisplay - 30) / 100) * currentRevenue;
         moneyOnTableTotal += excess;
-        moneyOnTableItems.push({ label: `CMV (${cmvPercentageDisplay.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(cmvPercentageDisplay - 30).toFixed(1)}% acima`, color: '#FFC100', pctOfRevenue: currentRevenue > 0 ? (excess / currentRevenue) * 100 : 0 });
+        moneyOnTableItems.push({ label: `CMV (${cmvPercentageDisplay.toFixed(0)}%)`, value: formatMoney(excess), pct: `${(cmvPercentageDisplay - 30).toFixed(1)}% acima`, color: '#FFC100', pctOfRevenue: cmvPercentageDisplay });
     }
 
     // Break Even Point (Ponto de Equilíbrio)

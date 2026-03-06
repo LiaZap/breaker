@@ -5,7 +5,10 @@ const MoneyOnTable = ({ data }) => {
 
   const items = data.items || [];
   const totalPct = items.reduce((sum, item) => sum + (item.pctOfRevenue || 0), 0);
-  const remainingPct = Math.max(0, 100 - totalPct);
+  // Scale proportionally if total exceeds 100%
+  const scale = totalPct > 100 ? 100 / totalPct : 1;
+  const scaledTotal = totalPct * scale;
+  const remainingPct = Math.max(0, 100 - scaledTotal);
 
   // Active item for tooltip
   const active = activeIdx !== null ? items[activeIdx] : null;
@@ -44,7 +47,7 @@ const MoneyOnTable = ({ data }) => {
                 key={idx}
                 className="h-full cursor-pointer transition-opacity duration-150"
                 style={{
-                  width: `${item.pctOfRevenue || 0}%`,
+                  width: `${(item.pctOfRevenue || 0) * scale}%`,
                   backgroundColor: item.color || '#FF9406',
                   opacity: activeIdx !== null && activeIdx !== idx ? 0.35 : 1,
                 }}
