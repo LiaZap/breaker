@@ -56,11 +56,12 @@ const FinanceOverview = ({ data, onUpdateRevenue }) => {
             const monthsShort = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
             const currentMonthIdx = new Date().getMonth();
 
-            // Show only up to current month (no future empty bars)
+            // Show only up to current month, reversed (current first)
             const visibleMonths = history.slice(0, currentMonthIdx + 1);
             const maxVal = Math.max(...visibleMonths, 1);
+            const reversed = visibleMonths.map((val, i) => ({ val, i })).reverse();
 
-            return visibleMonths.map((val, i) => {
+            return reversed.map(({ val, i }) => {
               const isCurrent = i === currentMonthIdx;
               const isSelected = selectedMonth === i;
               const hasData = val > 0;
